@@ -4,20 +4,35 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ReviewComment;
+use App\Models\Training;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ReportController extends Controller
 {
-    public function exportComments()
+    public function exportComments(Request $request, ?Training $training = null)
     {
-        $comments = ReviewComment::with([
+        $trainingId = $training?->id ?? $request->query('training_id');
+
+        $query = ReviewComment::with([
             'materialVersion.material.subject.training',
             'user',
             'review.user',
             'addressedBy'
-        ])->get();
+        ]);
 
-        $filename = "laporan_ulasan_lm_review_" . date('Y-m-d_H-i') . ".csv";
+        if ($trainingId) {
+            $query->whereHas('materialVersion.material.subject', function ($q) use ($trainingId) {
+                $q->where('training_id', $trainingId);
+            });
+        }
+
+        $comments = $query->get();
+
+        $trainingModel = $training ?? ($trainingId ? Training::find($trainingId) : null);
+        $slug = $trainingModel ? Str::slug($trainingModel->code ?: $trainingModel->title) . '_' : 'lm_review_';
+        $filename = "laporan_ulasan_{$slug}" . date('Y-m-d_H-i') . ".csv";
+
         $headers = [
             "Content-type"        => "text/csv",
             "Content-Disposition" => "attachment; filename=$filename",

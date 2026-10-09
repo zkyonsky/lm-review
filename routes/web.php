@@ -15,6 +15,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('roles-permissions', [App\Http\Controllers\Admin\RolePermissionController::class, 'index'])->name('roles-permissions.index');
         Route::put('roles-permissions/{role}', [App\Http\Controllers\Admin\RolePermissionController::class, 'update'])->name('roles-permissions.update');
         Route::post('permissions', [App\Http\Controllers\Admin\RolePermissionController::class, 'store'])->name('permissions.store');
+        Route::get('trainings/{training}/stmk/{type}', [App\Http\Controllers\Admin\TrainingController::class, 'generateStmk'])->name('trainings.stmk')->whereIn('type', ['pengembangan', 'reviu']);
+        Route::match(['get', 'post'], 'trainings/stmk/bulk', [App\Http\Controllers\Admin\TrainingController::class, 'generateStmkBulk'])->name('trainings.stmk.bulk');
+        Route::post('trainings/status/bulk', [App\Http\Controllers\Admin\TrainingController::class, 'updateStatusBulk'])->name('trainings.status.bulk');
         Route::resource('trainings', App\Http\Controllers\Admin\TrainingController::class);
         Route::post('trainings/{training}/subjects/reorder', [App\Http\Controllers\Admin\SubjectController::class, 'reorder'])->name('trainings.subjects.reorder');
         Route::resource('trainings.subjects', App\Http\Controllers\Admin\SubjectController::class)->shallow();
@@ -43,6 +46,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Reports
         Route::get('reports/comments', [App\Http\Controllers\Admin\ReportController::class, 'exportComments'])->name('reports.comments');
+        Route::get('trainings/{training}/report', [App\Http\Controllers\Admin\ReportController::class, 'exportComments'])->name('trainings.report');
     });
 
     // Reviewer Routes

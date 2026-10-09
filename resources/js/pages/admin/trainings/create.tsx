@@ -5,11 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-export default function Create() {
+export default function Create({ statuses = ['Sedang Review', 'Selesai Review'] }: { statuses?: string[] }) {
     const { data, setData, post, processing, errors } = useForm({
         code: '',
         title: '',
         description: '',
+        status: 'Sedang Review',
     });
 
     const submit = (e: React.FormEvent) => {
@@ -64,6 +65,23 @@ export default function Create() {
                                     placeholder="Contoh: Pelatihan Kepemimpinan"
                                 />
                                 {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="status">Status Pelatihan</Label>
+                                <select
+                                    id="status"
+                                    value={data.status}
+                                    onChange={(e) => setData('status', e.target.value)}
+                                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {statuses.map((statusOption) => (
+                                        <option key={statusOption} value={statusOption}>
+                                            {statusOption}
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors.status && <p className="text-sm text-destructive">{errors.status}</p>}
                             </div>
                             
                             <div className="space-y-2">

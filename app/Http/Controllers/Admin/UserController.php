@@ -37,6 +37,8 @@ class UserController extends Controller
             'password' => ['required', Rules\Password::defaults()],
             'nip' => 'nullable|string|max:50',
             'unit_kerja' => 'nullable|string|max:255',
+            'jabatan' => 'nullable|string|max:255',
+            'pangkat_golongan' => 'nullable|string|max:50',
             'is_active' => 'boolean',
             'roles' => 'array'
         ]);
@@ -48,6 +50,8 @@ class UserController extends Controller
             'password' => Hash::make($validated['password']),
             'nip' => $validated['nip'] ?? null,
             'unit_kerja' => $validated['unit_kerja'] ?? null,
+            'jabatan' => $validated['jabatan'] ?? null,
+            'pangkat_golongan' => $validated['pangkat_golongan'] ?? null,
             'is_active' => $validated['is_active'] ?? true,
         ]);
 
@@ -78,6 +82,8 @@ class UserController extends Controller
             'password' => ['nullable', Rules\Password::defaults()],
             'nip' => 'nullable|string|max:50',
             'unit_kerja' => 'nullable|string|max:255',
+            'jabatan' => 'nullable|string|max:255',
+            'pangkat_golongan' => 'nullable|string|max:50',
             'is_active' => 'boolean',
             'roles' => 'array'
         ]);
@@ -88,6 +94,8 @@ class UserController extends Controller
             'phone' => $validated['phone'] ?? null,
             'nip' => $validated['nip'] ?? null,
             'unit_kerja' => $validated['unit_kerja'] ?? null,
+            'jabatan' => $validated['jabatan'] ?? null,
+            'pangkat_golongan' => $validated['pangkat_golongan'] ?? null,
             'is_active' => $validated['is_active'] ?? true,
         ];
 

@@ -10,13 +10,21 @@ type Training = {
     code: string;
     title: string;
     description: string | null;
+    status: string;
 };
 
-export default function Edit({ training }: { training: Training }) {
+export default function Edit({
+    training,
+    statuses = ['Sedang Review', 'Selesai Review'],
+}: {
+    training: Training;
+    statuses?: string[];
+}) {
     const { data, setData, put, processing, errors } = useForm({
         code: training.code || '',
         title: training.title || '',
         description: training.description || '',
+        status: training.status || 'Sedang Review',
     });
 
     const submit = (e: React.FormEvent) => {
@@ -71,6 +79,23 @@ export default function Edit({ training }: { training: Training }) {
                                     placeholder="Contoh: Pelatihan Kepemimpinan"
                                 />
                                 {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="status">Status Pelatihan</Label>
+                                <select
+                                    id="status"
+                                    value={data.status}
+                                    onChange={(e) => setData('status', e.target.value)}
+                                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {statuses.map((statusOption) => (
+                                        <option key={statusOption} value={statusOption}>
+                                            {statusOption}
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors.status && <p className="text-sm text-destructive">{errors.status}</p>}
                             </div>
                             
                             <div className="space-y-2">

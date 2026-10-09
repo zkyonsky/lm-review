@@ -1,8 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { ArrowLeft, Plus, MoreVertical, Edit, Trash, Layers, GripVertical } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash, Layers, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { useEffect } from 'react';
@@ -23,6 +22,7 @@ type Training = {
     title: string;
     description: string | null;
     created_at: string;
+    status?: string;
     subjects: Subject[];
 };
 
@@ -60,9 +60,12 @@ export default function Show({ training }: { training: Training }) {
                             </Link>
                         </Button>
                         <div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                                 <h1 className="text-2xl font-semibold text-foreground">{training.title}</h1>
                                 <Badge variant="outline" className="font-mono">{training.code}</Badge>
+                                <Badge className={training.status === 'Selesai Review' ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-amber-500 hover:bg-amber-600 text-white'}>
+                                    {training.status || 'Sedang Review'}
+                                </Badge>
                             </div>
                             <p className="text-sm text-muted-foreground mt-1">
                                 {training.description || 'Tidak ada deskripsi.'}
@@ -99,14 +102,13 @@ export default function Show({ training }: { training: Training }) {
                                     <th className="w-10 p-4"></th>
                                     <th className="font-medium p-4 w-20">Urutan</th>
                                     <th className="font-medium p-4">Judul Mata Pelatihan</th>
-                                    <th className="font-medium p-4">Deskripsi</th>
                                     <th className="font-medium p-4 text-right">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
                                 {subjects.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                                        <td colSpan={4} className="p-8 text-center text-muted-foreground">
                                             Belum ada mata pelatihan.
                                         </td>
                                     </tr>
@@ -134,43 +136,41 @@ export default function Show({ training }: { training: Training }) {
                                                     {subject.title}
                                                 </Link>
                                             </td>
-                                            <td className="p-4 text-muted-foreground max-w-md truncate">
-                                                {subject.description || '-'}
-                                            </td>
                                             <td className="p-4 text-right">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon">
-                                                            <MoreVertical className="h-4 w-4" />
-                                                            <span className="sr-only">Menu</span>
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem asChild>
-                                                            <Link href={`/admin/subjects/${subject.id}`}>
-                                                                <Layers className="mr-2 h-4 w-4" />
-                                                                Detail & Materi
-                                                            </Link>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem asChild>
-                                                            <Link href={`/admin/subjects/${subject.id}/edit`}>
-                                                                <Edit className="mr-2 h-4 w-4" />
-                                                                Edit
-                                                            </Link>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem asChild>
-                                                            <Link 
-                                                                href={`/admin/subjects/${subject.id}`}
-                                                                method="delete"
-                                                                as="button"
-                                                                className="text-destructive focus:text-destructive w-full"
-                                                            >
-                                                                <Trash className="mr-2 h-4 w-4" />
-                                                                Hapus
-                                                            </Link>
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
+                                                <div className="flex items-center justify-end gap-1.5">
+                                                    <Button variant="outline" size="sm" asChild className="h-8">
+                                                        <Link href={`/admin/subjects/${subject.id}`}>
+                                                            <Layers className="mr-1.5 h-3.5 w-3.5" />
+                                                            Detail & Materi
+                                                        </Link>
+                                                    </Button>
+                                                    <Button variant="outline" size="sm" asChild className="h-8">
+                                                        <Link href={`/admin/subjects/${subject.id}/edit`}>
+                                                            <Edit className="mr-1.5 h-3.5 w-3.5" />
+                                                            Edit
+                                                        </Link>
+                                                    </Button>
+                                                    <Button 
+                                                        variant="outline" 
+                                                        size="sm" 
+                                                        asChild 
+                                                        className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+                                                    >
+                                                        <Link 
+                                                            href={`/admin/subjects/${subject.id}`}
+                                                            method="delete"
+                                                            as="button"
+                                                            onClick={(e) => {
+                                                                if (!confirm('Apakah Anda yakin ingin menghapus mata pelatihan ini?')) {
+                                                                    e.preventDefault();
+                                                                }
+                                                            }}
+                                                        >
+                                                            <Trash className="mr-1.5 h-3.5 w-3.5" />
+                                                            Hapus
+                                                        </Link>
+                                                    </Button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))

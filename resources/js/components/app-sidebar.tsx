@@ -39,11 +39,6 @@ export function AppSidebar() {
             href: '/admin/trainings',
             icon: BookOpen,
         });
-        navItems.push({
-            title: 'Ekspor Laporan (CSV)',
-            href: '/admin/reports/comments',
-            icon: BookOpen,
-        });
     }
     
     if (auth.user.roles?.includes('reviewer')) {

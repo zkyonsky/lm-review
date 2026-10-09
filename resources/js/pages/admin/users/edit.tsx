@@ -13,6 +13,8 @@ type User = {
     phone: string | null;
     nip: string | null;
     unit_kerja: string | null;
+    jabatan: string | null;
+    pangkat_golongan: string | null;
     is_active: boolean;
 };
 
@@ -30,6 +32,8 @@ export default function Edit({ user, roles, userRoles }: Props) {
         password: '',
         nip: user.nip || '',
         unit_kerja: user.unit_kerja || '',
+        jabatan: user.jabatan || '',
+        pangkat_golongan: user.pangkat_golongan || '',
         is_active: user.is_active,
         roles: userRoles,
     });
@@ -125,6 +129,26 @@ export default function Edit({ user, roles, userRoles }: Props) {
                                         placeholder="Pusat Pendidikan..."
                                     />
                                     {errors.unit_kerja && <p className="text-sm text-destructive">{errors.unit_kerja}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="jabatan">Jabatan</Label>
+                                    <Input
+                                        id="jabatan"
+                                        value={data.jabatan}
+                                        onChange={(e) => setData('jabatan', e.target.value)}
+                                        placeholder="Pranata Komputer / Widyaiswara..."
+                                    />
+                                    {errors.jabatan && <p className="text-sm text-destructive">{errors.jabatan}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="pangkat_golongan">Pangkat / Golongan</Label>
+                                    <Input
+                                        id="pangkat_golongan"
+                                        value={data.pangkat_golongan}
+                                        onChange={(e) => setData('pangkat_golongan', e.target.value)}
+                                        placeholder="Penata (III/c)..."
+                                    />
+                                    {errors.pangkat_golongan && <p className="text-sm text-destructive">{errors.pangkat_golongan}</p>}
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="password">Password Baru (Opsional)</Label>

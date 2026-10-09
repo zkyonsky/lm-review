@@ -18,6 +18,8 @@ export default function Create({ roles }: Props) {
         password: '',
         nip: '',
         unit_kerja: '',
+        jabatan: '',
+        pangkat_golongan: '',
         is_active: true,
         roles: [] as string[],
     });
@@ -113,6 +115,26 @@ export default function Create({ roles }: Props) {
                                         placeholder="Pusat Pendidikan..."
                                     />
                                     {errors.unit_kerja && <p className="text-sm text-destructive">{errors.unit_kerja}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="jabatan">Jabatan</Label>
+                                    <Input
+                                        id="jabatan"
+                                        value={data.jabatan}
+                                        onChange={(e) => setData('jabatan', e.target.value)}
+                                        placeholder="Pranata Komputer / Widyaiswara..."
+                                    />
+                                    {errors.jabatan && <p className="text-sm text-destructive">{errors.jabatan}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="pangkat_golongan">Pangkat / Golongan</Label>
+                                    <Input
+                                        id="pangkat_golongan"
+                                        value={data.pangkat_golongan}
+                                        onChange={(e) => setData('pangkat_golongan', e.target.value)}
+                                        placeholder="Penata (III/c)..."
+                                    />
+                                    {errors.pangkat_golongan && <p className="text-sm text-destructive">{errors.pangkat_golongan}</p>}
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="password">Password</Label>

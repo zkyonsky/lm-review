@@ -24,6 +24,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $phone
  * @property string|null $nip
  * @property string|null $unit_kerja
+ * @property string|null $jabatan
+ * @property string|null $pangkat_golongan
  * @property bool $is_active
  * @property Carbon|null $email_verified_at
  * @property string $password
@@ -34,7 +36,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'phone', 'nip', 'unit_kerja', 'is_active', 'password', 'email_verified_at'])]
+#[Fillable(['name', 'email', 'phone', 'nip', 'unit_kerja', 'jabatan', 'pangkat_golongan', 'is_active', 'password', 'email_verified_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {

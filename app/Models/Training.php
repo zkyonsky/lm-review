@@ -24,6 +24,14 @@ class Training extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public const STATUS_SEDANG_REVIEW = 'Sedang Review';
+    public const STATUS_SELESAI_REVIEW = 'Selesai Review';
+
+    public const STATUSES = [
+        self::STATUS_SEDANG_REVIEW,
+        self::STATUS_SELESAI_REVIEW,
+    ];
+
     /** @return HasMany<Subject, $this> */
     public function subjects(): HasMany
     {

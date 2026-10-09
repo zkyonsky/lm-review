@@ -18,7 +18,7 @@ class TrainingFactory extends Factory
             'title' => 'Pelatihan '.fake()->words(3, true),
             'description' => fake()->paragraph(),
             'year' => (int) now()->format('Y'),
-            'status' => 'active',
+            'status' => 'Sedang Review',
             'created_by' => User::factory(),
         ];
     }
