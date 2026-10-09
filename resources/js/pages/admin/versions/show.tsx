@@ -1,5 +1,5 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { ArrowLeft, Link as LinkIcon, Download, Trash, CheckCircle, Users, UserPlus } from 'lucide-react';
+import { ArrowLeft, Link as LinkIcon, Download, Trash, CheckCircle, Users, UserPlus, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -122,6 +122,12 @@ export default function Show({ version, availableReviewers }: Props) {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <Button asChild variant="default">
+                            <Link href={`/admin/versions/${version.id}/workspace`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Buka Workspace
+                            </Link>
+                        </Button>
                         {!version.is_active && (
                             <Button variant="outline" onClick={handleToggleActive}>
                                 <CheckCircle className="mr-2 h-4 w-4" />

@@ -91,13 +91,15 @@ class MaterialVersionController extends Controller
                 'status' => 'pending',
             ]);
 
-            \App\Models\Review::firstOrCreate([
+            $review = \App\Models\Review::firstOrCreate([
                 'material_version_id' => $version->id,
                 'reviewer_id' => $reviewer->id,
             ], [
                 'review_assignment_id' => $assignment->id,
                 'status' => 'draft',
             ]);
+
+            \App\Facades\WhatsApp::notifyNewVersionUploaded($reviewer, $version, $review);
         }
 
         if ($material->type->value === 'scorm') {

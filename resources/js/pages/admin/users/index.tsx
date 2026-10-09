@@ -12,6 +12,7 @@ type User = {
     id: number;
     name: string;
     email: string;
+    phone: string | null;
     nip: string | null;
     unit_kerja: string | null;
     is_active: boolean;
@@ -82,6 +83,11 @@ export default function Index({ users }: Props) {
                                             <td className="p-4">
                                                 <div className="font-medium text-foreground">{user.name}</div>
                                                 <div className="text-muted-foreground">{user.email}</div>
+                                                {user.phone && (
+                                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                                        <span className="text-green-600 dark:text-green-400 font-medium">WA:</span> {user.phone}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="p-4">
                                                 <div className="font-medium">{user.nip || '-'}</div>

@@ -33,6 +33,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
+            'phone' => 'nullable|string|max:30',
             'password' => ['required', Rules\Password::defaults()],
             'nip' => 'nullable|string|max:50',
             'unit_kerja' => 'nullable|string|max:255',
@@ -43,9 +44,10 @@ class UserController extends Controller
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
             'password' => Hash::make($validated['password']),
-            'nip' => $validated['nip'],
-            'unit_kerja' => $validated['unit_kerja'],
+            'nip' => $validated['nip'] ?? null,
+            'unit_kerja' => $validated['unit_kerja'] ?? null,
             'is_active' => $validated['is_active'] ?? true,
         ]);
 
@@ -72,6 +74,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
+            'phone' => 'nullable|string|max:30',
             'password' => ['nullable', Rules\Password::defaults()],
             'nip' => 'nullable|string|max:50',
             'unit_kerja' => 'nullable|string|max:255',
@@ -82,8 +85,9 @@ class UserController extends Controller
         $data = [
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'nip' => $validated['nip'],
-            'unit_kerja' => $validated['unit_kerja'],
+            'phone' => $validated['phone'] ?? null,
+            'nip' => $validated['nip'] ?? null,
+            'unit_kerja' => $validated['unit_kerja'] ?? null,
             'is_active' => $validated['is_active'] ?? true,
         ];
 

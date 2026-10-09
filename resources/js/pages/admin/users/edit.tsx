@@ -10,6 +10,7 @@ type User = {
     id: number;
     name: string;
     email: string;
+    phone: string | null;
     nip: string | null;
     unit_kerja: string | null;
     is_active: boolean;
@@ -25,6 +26,7 @@ export default function Edit({ user, roles, userRoles }: Props) {
     const { data, setData, put, processing, errors } = useForm({
         name: user.name || '',
         email: user.email || '',
+        phone: user.phone || '',
         password: '',
         nip: user.nip || '',
         unit_kerja: user.unit_kerja || '',
@@ -93,6 +95,16 @@ export default function Edit({ user, roles, userRoles }: Props) {
                                         placeholder="john@example.com"
                                     />
                                     {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="phone">Nomor WhatsApp</Label>
+                                    <Input
+                                        id="phone"
+                                        value={data.phone}
+                                        onChange={(e) => setData('phone', e.target.value)}
+                                        placeholder="081234567890"
+                                    />
+                                    {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="nip">NIP</Label>

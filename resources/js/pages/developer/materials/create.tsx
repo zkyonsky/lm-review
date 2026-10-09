@@ -22,9 +22,10 @@ type MaterialTypeOption = {
 type Props = {
     subject: Subject;
     types: (MaterialTypeOption | string)[];
+    nextOrder?: number;
 };
 
-export default function Create({ subject, types }: Props) {
+export default function Create({ subject, types, nextOrder = 1 }: Props) {
     const firstType = types[0];
     const initialType = typeof firstType === 'string' ? firstType : (firstType?.value || 'pdf');
 
@@ -32,7 +33,7 @@ export default function Create({ subject, types }: Props) {
         title: '',
         description: '',
         type: initialType,
-        order: 1,
+        order: nextOrder,
     });
 
     const submit = (e: React.FormEvent) => {
@@ -113,11 +114,14 @@ export default function Create({ subject, types }: Props) {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="order">Urutan Tampil</Label>
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="order">Nomor Urut</Label>
+                                    <span className="text-xs text-muted-foreground">Otomatis terisi urutan berikutnya</span>
+                                </div>
                                 <Input
                                     id="order"
                                     type="number"
-                                    min="0"
+                                    min="1"
                                     value={data.order}
                                     onChange={(e) => setData('order', parseInt(e.target.value) || 0)}
                                 />

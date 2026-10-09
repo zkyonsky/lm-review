@@ -1,10 +1,12 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, UploadCloud } from 'lucide-react';
+import { ArrowLeft, UploadCloud, FileArchive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
+import { Spinner } from '@/components/ui/spinner';
 
 type Material = {
     id: number;
@@ -12,8 +14,16 @@ type Material = {
     type: string;
 };
 
+function formatBytes(bytes?: number): string {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
+}
+
 export default function Create({ material }: { material: Material }) {
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, progress, errors } = useForm({
         google_drive_id: '',
         scorm_file: null as File | null,
         is_active: true,
@@ -56,16 +66,60 @@ export default function Create({ material }: { material: Material }) {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {material.type === 'scorm' ? (
-                                <div className="space-y-2">
-                                    <Label htmlFor="scorm_file">File SCORM (.zip)</Label>
-                                    <Input
-                                        id="scorm_file"
-                                        type="file"
-                                        accept=".zip"
-                                        onChange={(e) => setData('scorm_file', e.target.files?.[0] || null)}
-                                        required
-                                    />
-                                    {errors.scorm_file && <p className="text-sm text-destructive">{errors.scorm_file}</p>}
+                                <div className="space-y-3">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="scorm_file">File SCORM (.zip)</Label>
+                                        <Input
+                                            id="scorm_file"
+                                            type="file"
+                                            accept=".zip"
+                                            disabled={processing}
+                                            onChange={(e) => setData('scorm_file', e.target.files?.[0] || null)}
+                                            required
+                                        />
+                                        {errors.scorm_file && <p className="text-sm text-destructive">{errors.scorm_file}</p>}
+                                    </div>
+
+                                    {data.scorm_file && !processing && (
+                                        <div className="flex items-center justify-between text-xs text-muted-foreground bg-muted/40 p-2.5 rounded-md border border-border">
+                                            <span className="flex items-center gap-2 truncate">
+                                                <FileArchive className="h-4 w-4 text-primary shrink-0" />
+                                                <span className="truncate font-medium text-foreground">{data.scorm_file.name}</span>
+                                            </span>
+                                            <span className="shrink-0 ml-2 font-mono text-xs">{formatBytes(data.scorm_file.size)}</span>
+                                        </div>
+                                    )}
+
+                                    {processing && (
+                                        <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3 animate-in fade-in">
+                                            <div className="flex items-center justify-between text-xs">
+                                                <span className="font-medium text-foreground flex items-center gap-2">
+                                                    <Spinner className="h-4 w-4 text-primary" />
+                                                    {(progress?.percentage ?? 100) < 100
+                                                        ? 'Mengunggah paket SCORM...'
+                                                        : 'Memproses & mengekstrak paket SCORM di server...'}
+                                                </span>
+                                                <span className="font-semibold text-primary">
+                                                    {progress?.percentage ?? 100}%
+                                                </span>
+                                            </div>
+                                            <Progress value={progress?.percentage ?? 100} />
+                                            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                                                <span>
+                                                    {progress?.loaded && progress?.total
+                                                        ? `${formatBytes(progress.loaded)} / ${formatBytes(progress.total)}`
+                                                        : data.scorm_file
+                                                        ? formatBytes(data.scorm_file.size)
+                                                        : ''}
+                                                </span>
+                                                <span>
+                                                    {(progress?.percentage ?? 100) < 100
+                                                        ? 'Mohon jangan menutup halaman ini'
+                                                        : 'Ekstraksi SCORM sedang berjalan...'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="space-y-2">
@@ -73,6 +127,7 @@ export default function Create({ material }: { material: Material }) {
                                     <Input
                                         id="google_drive_id"
                                         value={data.google_drive_id}
+                                        disabled={processing}
                                         onChange={(e) => setData('google_drive_id', e.target.value)}
                                         placeholder="Contoh: 1aB2c... atau https://drive.google.com/file/d/.../view"
                                         required
@@ -89,6 +144,7 @@ export default function Create({ material }: { material: Material }) {
                                     <Checkbox 
                                         id="is_active" 
                                         checked={data.is_active}
+                                        disabled={processing}
                                         onCheckedChange={(checked) => setData('is_active', checked as boolean)}
                                     />
                                     <Label htmlFor="is_active" className="cursor-pointer text-sm">
@@ -100,8 +156,19 @@ export default function Create({ material }: { material: Material }) {
                         </CardContent>
                         <div className="flex items-center justify-end border-t border-border p-4 bg-muted/20">
                             <Button type="submit" disabled={processing}>
-                                <UploadCloud className="mr-2 h-4 w-4" />
-                                {material.type === 'scorm' ? 'Unggah SCORM' : 'Simpan Link Versi Baru'}
+                                {processing ? (
+                                    <>
+                                        <Spinner className="mr-2 h-4 w-4" />
+                                        {material.type === 'scorm' 
+                                            ? ((progress?.percentage ?? 100) < 100 ? `Mengunggah (${progress?.percentage}%)...` : 'Memproses...') 
+                                            : 'Menyimpan...'}
+                                    </>
+                                ) : (
+                                    <>
+                                        <UploadCloud className="mr-2 h-4 w-4" />
+                                        {material.type === 'scorm' ? 'Unggah SCORM' : 'Simpan Link Versi Baru'}
+                                    </>
+                                )}
                             </Button>
                         </div>
                     </form>

@@ -10,11 +10,16 @@ type Training = {
     title: string;
 };
 
-export default function Create({ training }: { training: Training }) {
+type Props = {
+    training: Training;
+    nextOrder?: number;
+};
+
+export default function Create({ training, nextOrder = 1 }: Props) {
     const { data, setData, post, processing, errors } = useForm({
         title: '',
         description: '',
-        order: 1,
+        order: nextOrder,
     });
 
     const submit = (e: React.FormEvent) => {
@@ -73,11 +78,14 @@ export default function Create({ training }: { training: Training }) {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="order">Urutan</Label>
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="order">Nomor Urut</Label>
+                                    <span className="text-xs text-muted-foreground">Otomatis terisi urutan berikutnya</span>
+                                </div>
                                 <Input
                                     id="order"
                                     type="number"
-                                    min="0"
+                                    min="1"
                                     value={data.order}
                                     onChange={(e) => setData('order', parseInt(e.target.value) || 0)}
                                 />

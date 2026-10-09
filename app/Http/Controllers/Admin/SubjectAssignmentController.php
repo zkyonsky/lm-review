@@ -69,6 +69,9 @@ class SubjectAssignmentController extends Controller
         }
 
         $roleLabel = $validated['role'] === 'pengembang' ? 'Pengembang Materi' : 'Reviewer';
+
+        \App\Facades\WhatsApp::notifySubjectAssignment($user, $subject, $validated['role']);
+
         return back()->with('success', "{$user->name} berhasil ditugaskan sebagai {$roleLabel}.");
     }
 

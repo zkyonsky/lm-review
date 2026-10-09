@@ -14,6 +14,7 @@ export default function Create({ roles }: Props) {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
+        phone: '',
         password: '',
         nip: '',
         unit_kerja: '',
@@ -82,6 +83,16 @@ export default function Create({ roles }: Props) {
                                         placeholder="john@example.com"
                                     />
                                     {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="phone">Nomor WhatsApp</Label>
+                                    <Input
+                                        id="phone"
+                                        value={data.phone}
+                                        onChange={(e) => setData('phone', e.target.value)}
+                                        placeholder="081234567890"
+                                    />
+                                    {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="nip">NIP</Label>

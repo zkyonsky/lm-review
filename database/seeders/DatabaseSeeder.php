@@ -23,6 +23,8 @@ class DatabaseSeeder extends Seeder
             SpatieRole::findOrCreate($role->value);
         }
 
+        $this->call(PermissionSeeder::class);
+
         // Admin User
         $admin = User::factory()->create([
             'name' => 'Administrator',

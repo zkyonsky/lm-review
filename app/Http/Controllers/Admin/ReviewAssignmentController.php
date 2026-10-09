@@ -35,11 +35,13 @@ class ReviewAssignmentController extends Controller
             'status' => 'pending',
         ]);
 
-        $version->reviews()->create([
+        $review = $version->reviews()->create([
             'review_assignment_id' => $assignment->id,
             'reviewer_id' => $user->id,
             'status' => 'draft',
         ]);
+
+        \App\Facades\WhatsApp::notifyReviewAssignment($user, $version, $review);
 
         return back()->with('success', 'Reviewer berhasil ditugaskan.');
     }

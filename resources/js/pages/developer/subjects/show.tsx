@@ -1,7 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { 
     ArrowLeft, Plus, MoreVertical, Edit, FileText, 
-    Users, Clock, Layers, Upload, ExternalLink, ShieldCheck, Mail, Building
+    Users, Clock, Layers, Upload, ExternalLink, ShieldCheck, Mail, Building, GripVertical 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
+import { cn } from '@/lib/utils';
+import { useSortableList } from '@/hooks/use-sortable-list';
 import type { SharedData } from '@/types';
 
 type User = {
@@ -65,6 +67,16 @@ type Props = {
 
 export default function Show({ subject }: Props) {
     const { flash } = usePage<{ flash?: { success?: string; error?: string } } & SharedData>().props;
+
+    const {
+        items: materials,
+        draggedIndex,
+        dragOverIndex,
+        handleDragStart,
+        handleDragOver,
+        handleDrop,
+        handleDragEnd,
+    } = useSortableList<Material>(subject.materials || [], `/developer/subjects/${subject.id}/materials/reorder`);
 
     useEffect(() => {
         if (flash?.success) {
@@ -239,10 +251,17 @@ export default function Show({ subject }: Props) {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
-                            <CardTitle className="text-lg flex items-center gap-2">
-                                <FileText className="h-5 w-5 text-primary" />
-                                Materi Pelatihan
-                            </CardTitle>
+                            <div className="flex items-center gap-3">
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <FileText className="h-5 w-5 text-primary" />
+                                    Materi Pelatihan
+                                </CardTitle>
+                                {materials.length > 1 && (
+                                    <Badge variant="outline" className="text-xs text-muted-foreground font-normal hidden sm:inline-flex items-center gap-1">
+                                        <GripVertical className="h-3 w-3" /> Drag baris untuk ubah urutan
+                                    </Badge>
+                                )}
+                            </div>
                             <CardDescription className="text-xs mt-1">
                                 Kelola materi, unggah modul (PDF/Video/SCORM), dan lihat status reviu.
                             </CardDescription>
@@ -255,7 +274,7 @@ export default function Show({ subject }: Props) {
                         </Button>
                     </CardHeader>
                     <CardContent>
-                        {subject.materials.length === 0 ? (
+                        {materials.length === 0 ? (
                             <div className="p-8 text-center text-muted-foreground border border-dashed rounded-lg">
                                 <p className="text-sm font-medium">Belum ada materi dalam mata pelatihan ini.</p>
                                 <p className="text-xs text-muted-foreground mt-1">
@@ -267,6 +286,8 @@ export default function Show({ subject }: Props) {
                                 <table className="w-full text-left text-sm">
                                     <thead className="bg-muted/50 text-muted-foreground border-b border-border">
                                         <tr>
+                                            <th className="w-10 p-3"></th>
+                                            <th className="font-medium p-3 w-16">Urutan</th>
                                             <th className="font-medium p-3">Materi</th>
                                             <th className="font-medium p-3">Tipe</th>
                                             <th className="font-medium p-3">Versi Aktif</th>
@@ -275,10 +296,26 @@ export default function Show({ subject }: Props) {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border">
-                                        {subject.materials.map((mat) => {
+                                        {materials.map((mat, index) => {
                                             const activeVersion = mat.versions?.find(v => v.id === mat.current_version_id) || mat.versions?.[0];
                                             return (
-                                                <tr key={mat.id} className="hover:bg-muted/50 transition-colors">
+                                                <tr
+                                                    key={mat.id}
+                                                    draggable
+                                                    onDragStart={(e) => handleDragStart(e, index)}
+                                                    onDragOver={(e) => handleDragOver(e, index)}
+                                                    onDrop={(e) => handleDrop(e, index)}
+                                                    onDragEnd={handleDragEnd}
+                                                    className={cn(
+                                                        'hover:bg-muted/50 transition-colors group cursor-move',
+                                                        draggedIndex === index && 'opacity-40 bg-muted/60',
+                                                        dragOverIndex === index && draggedIndex !== index && 'border-t-2 border-primary bg-primary/5'
+                                                    )}
+                                                >
+                                                    <td className="p-3 text-center cursor-grab active:cursor-grabbing text-muted-foreground/60 group-hover:text-foreground">
+                                                        <GripVertical className="h-4 w-4 mx-auto" />
+                                                    </td>
+                                                    <td className="p-3 font-mono font-medium text-foreground">{mat.order ?? index + 1}</td>
                                                     <td className="p-3">
                                                         <div className="font-medium text-foreground">
                                                             {mat.title}

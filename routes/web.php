@@ -12,8 +12,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Admin Routes
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::resource('users', App\Http\Controllers\Admin\UserController::class)->except(['show']);
+        Route::get('roles-permissions', [App\Http\Controllers\Admin\RolePermissionController::class, 'index'])->name('roles-permissions.index');
+        Route::put('roles-permissions/{role}', [App\Http\Controllers\Admin\RolePermissionController::class, 'update'])->name('roles-permissions.update');
+        Route::post('permissions', [App\Http\Controllers\Admin\RolePermissionController::class, 'store'])->name('permissions.store');
         Route::resource('trainings', App\Http\Controllers\Admin\TrainingController::class);
+        Route::post('trainings/{training}/subjects/reorder', [App\Http\Controllers\Admin\SubjectController::class, 'reorder'])->name('trainings.subjects.reorder');
         Route::resource('trainings.subjects', App\Http\Controllers\Admin\SubjectController::class)->shallow();
+        Route::post('subjects/{subject}/materials/reorder', [App\Http\Controllers\Admin\MaterialController::class, 'reorder'])->name('subjects.materials.reorder');
         Route::resource('subjects.materials', App\Http\Controllers\Admin\MaterialController::class)->shallow();
         
         // Subject Assignments (Pengembang & Reviewer)
@@ -31,6 +36,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('versions/{version}/assign', [App\Http\Controllers\Admin\ReviewAssignmentController::class, 'store'])->name('versions.assign');
         Route::delete('versions/{version}/assign/{review}', [App\Http\Controllers\Admin\ReviewAssignmentController::class, 'destroy'])->name('versions.unassign');
         
+        Route::get('versions/{version}/workspace', [App\Http\Controllers\Admin\ReviewWorkspaceController::class, 'showForVersion'])->name('versions.workspace');
         Route::get('workspace/{review}', [App\Http\Controllers\Admin\ReviewWorkspaceController::class, 'show'])->name('workspace.show');
         Route::post('workspace/{review}/comments/{comment}/reply', [App\Http\Controllers\Admin\ReviewWorkspaceController::class, 'reply'])->name('workspace.comments.reply');
         Route::patch('workspace/{review}/comments/{comment}/toggle', [App\Http\Controllers\Admin\ReviewWorkspaceController::class, 'toggleStatus'])->name('workspace.comments.toggle');
@@ -53,6 +59,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('subjects/{subject}', [App\Http\Controllers\Developer\SubjectController::class, 'show'])->name('subjects.show');
 
         // Material Management
+        Route::post('subjects/{subject}/materials/reorder', [App\Http\Controllers\Developer\MaterialController::class, 'reorder'])->name('subjects.materials.reorder');
         Route::get('subjects/{subject}/materials/create', [App\Http\Controllers\Developer\MaterialController::class, 'create'])->name('subjects.materials.create');
         Route::post('subjects/{subject}/materials', [App\Http\Controllers\Developer\MaterialController::class, 'store'])->name('subjects.materials.store');
         Route::get('materials/{material}', [App\Http\Controllers\Developer\MaterialController::class, 'show'])->name('materials.show');

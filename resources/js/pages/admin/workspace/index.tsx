@@ -1,4 +1,4 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { ArrowLeft, Send, CheckCircle, MessageSquare, Reply, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,7 +43,18 @@ type Review = {
     comments: Comment[];
 };
 
-export default function Workspace({ review }: { review: Review }) {
+type ReviewSummary = {
+    id: number;
+    status: string;
+    user: User;
+};
+
+type Props = {
+    review: Review;
+    allReviews?: ReviewSummary[];
+};
+
+export default function Workspace({ review, allReviews }: Props) {
     const { flash } = usePage<{ flash?: { success?: string; error?: string } } & SharedData>().props;
     const [replyTo, setReplyTo] = useState<number | null>(null);
     
@@ -122,14 +133,32 @@ export default function Workspace({ review }: { review: Review }) {
 
                 {/* Right: Comments */}
                 <div className="w-96 flex flex-col bg-background">
-                    <div className="p-4 border-b border-border bg-muted/20 flex items-center justify-between">
-                        <h2 className="font-semibold flex items-center text-sm">
-                            <MessageSquare className="mr-2 h-4 w-4" /> Ulasan {review.user.name}
-                        </h2>
-                        {review.status === 'draft' ? (
-                            <Badge variant="secondary">Draft</Badge>
-                        ) : (
-                            <Badge className="bg-green-500">Submitted</Badge>
+                    <div className="p-4 border-b border-border bg-muted/20">
+                        <div className="flex items-center justify-between">
+                            <h2 className="font-semibold flex items-center text-sm">
+                                <MessageSquare className="mr-2 h-4 w-4" /> Ulasan {review.user.name}
+                            </h2>
+                            {review.status === 'draft' ? (
+                                <Badge variant="secondary">Draft</Badge>
+                            ) : (
+                                <Badge className="bg-green-500">Submitted</Badge>
+                            )}
+                        </div>
+                        {allReviews && allReviews.length > 1 && (
+                            <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">Reviewer:</span>
+                                <select
+                                    className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                    value={review.id}
+                                    onChange={(e) => router.visit(`/admin/workspace/${e.target.value}`)}
+                                >
+                                    {allReviews.map((r) => (
+                                        <option key={r.id} value={r.id}>
+                                            {r.user.name} ({r.status === 'submitted' ? 'Selesai' : 'Draft'})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         )}
                     </div>
                     

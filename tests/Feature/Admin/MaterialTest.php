@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\Material;
 use App\Models\Subject;
 use App\Models\Training;
 use App\Models\User;
@@ -138,5 +139,97 @@ class MaterialTest extends TestCase
 
         $material->refresh();
         $this->assertNotNull($material->current_version_id);
+    }
+
+    public function test_admin_material_order_auto_increments()
+    {
+        Role::create(['name' => 'admin']);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $training = Training::create([
+            'code' => 'TR-04',
+            'title' => 'Training 4',
+            'created_by' => $admin->id,
+        ]);
+
+        $subject = Subject::create([
+            'training_id' => $training->id,
+            'title' => 'Subject 4',
+            'sort_order' => 1,
+        ]);
+
+        // First material without order -> should be 1
+        $this->actingAs($admin)->post(route('admin.subjects.materials.store', $subject), [
+            'title' => 'Materi Auto 1',
+            'type' => 'pdf',
+        ]);
+
+        $this->assertDatabaseHas('materials', [
+            'subject_id' => $subject->id,
+            'title' => 'Materi Auto 1',
+            'sort_order' => 1,
+        ]);
+
+        // Second material without order -> should be 2
+        $this->actingAs($admin)->post(route('admin.subjects.materials.store', $subject), [
+            'title' => 'Materi Auto 2',
+            'type' => 'video',
+        ]);
+
+        $this->assertDatabaseHas('materials', [
+            'subject_id' => $subject->id,
+            'title' => 'Materi Auto 2',
+            'sort_order' => 2,
+        ]);
+    }
+
+    public function test_admin_can_reorder_materials()
+    {
+        Role::create(['name' => 'admin']);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $training = Training::create([
+            'code' => 'TR-05',
+            'title' => 'Training 5',
+            'created_by' => $admin->id,
+        ]);
+
+        $subject = Subject::create([
+            'training_id' => $training->id,
+            'title' => 'Subject 5',
+            'sort_order' => 1,
+        ]);
+
+        $m1 = Material::create([
+            'subject_id' => $subject->id,
+            'title' => 'Materi A',
+            'type' => 'pdf',
+            'sort_order' => 1,
+            'created_by' => $admin->id,
+        ]);
+
+        $m2 = Material::create([
+            'subject_id' => $subject->id,
+            'title' => 'Materi B',
+            'type' => 'pdf',
+            'sort_order' => 2,
+            'created_by' => $admin->id,
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('admin.subjects.materials.reorder', $subject), [
+            'orders' => [
+                ['id' => $m1->id, 'order' => 2],
+                ['id' => $m2->id, 'order' => 1],
+            ],
+        ]);
+
+        $response->assertSessionHas('success');
+
+        $this->assertSame(2, $m1->fresh()->sort_order);
+        $this->assertSame(1, $m2->fresh()->sort_order);
     }
 }
