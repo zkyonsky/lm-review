@@ -397,7 +397,6 @@ export default function Index({
                                                         >
                                                             <a
                                                                 href={`/admin/trainings/${training.id}/stmk/pengembangan`}
-                                                                download
                                                                 title="Generate STMK Pengembang"
                                                             >
                                                                 <FileText className="mr-1.5 h-3.5 w-3.5" />
@@ -412,7 +411,6 @@ export default function Index({
                                                         >
                                                             <a
                                                                 href={`/admin/trainings/${training.id}/stmk/reviu`}
-                                                                download
                                                                 title="Generate STMK Reviu"
                                                             >
                                                                 <FileCheck className="mr-1.5 h-3.5 w-3.5" />
@@ -427,7 +425,6 @@ export default function Index({
                                                         >
                                                             <a
                                                                 href={`/admin/trainings/${training.id}/report`}
-                                                                download
                                                                 title="Ekspor Laporan Komentar (CSV)"
                                                             >
                                                                 <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5" />
