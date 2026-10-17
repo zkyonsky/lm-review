@@ -15,10 +15,7 @@ class SubjectFactory extends Factory
     {
         return [
             'training_id' => Training::factory(),
-            'code' => 'MP-'.fake()->numerify('##'),
             'title' => fake()->sentence(4),
-            'description' => fake()->sentence(),
-            'jp' => fake()->numberBetween(2, 12),
             'sort_order' => 0,
         ];
     }

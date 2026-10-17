@@ -13,13 +13,52 @@ use ZipArchive;
 class StmkService
 {
     /**
+     * Cek apakah nama pelatihan dimulai dengan "Microlearning".
+     */
+    public function isMicrolearning(Training|string|null $training): bool
+    {
+        $title = $training instanceof Training ? ($training->title ?? '') : (string) ($training ?? '');
+        return str_starts_with(strtolower(trim($title)), 'microlearning');
+    }
+
+    /**
      * Cari path template file di folder storage.
      */
-    public function getTemplatePath(string $type): ?string
+    public function getTemplatePath(string $type, Training|string|null $training = null): ?string
     {
-        $names = $type === 'pengembangan'
-            ? ['template STMK Pengembangan.docx', 'STMK Pengembangan.docx', 'Template STMK Pengembangan.docx']
-            : ['STMK Reviu.docx', 'template STMK Reviu.docx', 'Template STMK Reviu.docx'];
+        $isMicro = $this->isMicrolearning($training);
+
+        if ($type === 'pengembangan') {
+            $names = $isMicro
+                ? [
+                    'STMK Pengembangan - Microleaning.docx',
+                    'STMK Pengembangan - Microlearning.docx',
+                    'template STMK Pengembangan - Microleaning.docx',
+                    'template STMK Pengembangan - Microlearning.docx',
+                    'Template STMK Pengembangan - Microleaning.docx',
+                    'Template STMK Pengembangan - Microlearning.docx',
+                ]
+                : [
+                    'template STMK Pengembangan.docx',
+                    'STMK Pengembangan.docx',
+                    'Template STMK Pengembangan.docx',
+                ];
+        } else {
+            $names = $isMicro
+                ? [
+                    'STMK Reviu - Microlearning.docx',
+                    'STMK Reviu - Microleaning.docx',
+                    'template STMK Reviu - Microlearning.docx',
+                    'template STMK Reviu - Microleaning.docx',
+                    'Template STMK Reviu - Microlearning.docx',
+                    'Template STMK Reviu - Microleaning.docx',
+                ]
+                : [
+                    'STMK Reviu.docx',
+                    'template STMK Reviu.docx',
+                    'Template STMK Reviu.docx',
+                ];
+        }
 
         $locations = [
             storage_path('app/public'),
@@ -108,9 +147,12 @@ class StmkService
      */
     public function generatePengembanganDoc(User $user, Subject $subject, Training $training): string
     {
-        $templatePath = $this->getTemplatePath('pengembangan');
+        $templatePath = $this->getTemplatePath('pengembangan', $training);
         if (!$templatePath) {
-            throw new \RuntimeException('File template STMK Pengembangan.docx tidak ditemukan di folder storage.');
+            $expectedName = $this->isMicrolearning($training)
+                ? 'STMK Pengembangan - Microleaning.docx'
+                : 'STMK Pengembangan.docx';
+            throw new \RuntimeException("File template {$expectedName} tidak ditemukan di folder storage.");
         }
 
         $tp = $this->createProcessor($templatePath);
@@ -135,9 +177,12 @@ class StmkService
      */
     public function generateReviuDoc(User $user, Subject $subject, Training $training): string
     {
-        $templatePath = $this->getTemplatePath('reviu');
+        $templatePath = $this->getTemplatePath('reviu', $training);
         if (!$templatePath) {
-            throw new \RuntimeException('File template STMK Reviu.docx tidak ditemukan di folder storage.');
+            $expectedName = $this->isMicrolearning($training)
+                ? 'STMK Reviu - Microlearning.docx'
+                : 'STMK Reviu.docx';
+            throw new \RuntimeException("File template {$expectedName} tidak ditemukan di folder storage.");
         }
 
         $tp = $this->createProcessor($templatePath);
@@ -176,7 +221,7 @@ class StmkService
         }
 
         $label = $type === 'pengembangan' ? 'Pengembangan' : 'Reviu';
-        $trainingSlug = Str::slug($training->code ?: 'pelatihan');
+        $trainingSlug = Str::slug($training->title ?: 'pelatihan');
 
         // Jika hanya ada 1 penugasan (1 orang 1 mata pelatihan)
         if ($assignments->count() === 1) {
@@ -270,7 +315,7 @@ class StmkService
                 continue;
             }
 
-            $trainingSlug = Str::slug($training->code ?: "pelatihan-{$training->id}");
+            $trainingSlug = Str::slug($training->title ?: "pelatihan-{$training->id}");
             $existingNames = [];
 
             foreach ($assignments as $item) {

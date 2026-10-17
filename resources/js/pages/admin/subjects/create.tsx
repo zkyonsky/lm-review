@@ -18,7 +18,6 @@ type Props = {
 export default function Create({ training, nextOrder = 1 }: Props) {
     const { data, setData, post, processing, errors } = useForm({
         title: '',
-        description: '',
         order: nextOrder,
     });
 
@@ -63,18 +62,6 @@ export default function Create({ training, nextOrder = 1 }: Props) {
                                     placeholder="Contoh: Pengenalan Aplikasi"
                                 />
                                 {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
-                            </div>
-                            
-                            <div className="space-y-2">
-                                <Label htmlFor="description">Deskripsi</Label>
-                                <textarea
-                                    id="description"
-                                    value={data.description}
-                                    onChange={(e) => setData('description', e.target.value)}
-                                    placeholder="Deskripsi singkat..."
-                                    className="flex min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                                />
-                                {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
                             </div>
 
                             <div className="space-y-2">

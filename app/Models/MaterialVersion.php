@@ -62,6 +62,18 @@ class MaterialVersion extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /** @return HasMany<MaterialAiAnalysis, $this> */
+    public function aiAnalyses(): HasMany
+    {
+        return $this->hasMany(MaterialAiAnalysis::class);
+    }
+
+    /** @return HasOne<MaterialAiAnalysis, $this> */
+    public function latestAiAnalysis(): HasOne
+    {
+        return $this->hasOne(MaterialAiAnalysis::class)->latestOfMany();
+    }
+
     /**
      * URL embed preview Google Drive / SCORM / Konten.
      *

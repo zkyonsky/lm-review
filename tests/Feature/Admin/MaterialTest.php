@@ -34,9 +34,7 @@ class MaterialTest extends TestCase
         ]);
 
         $response = $this->actingAs($admin)->post(route('admin.subjects.materials.store', $subject), [
-            'title' => 'Bahan Tayang',
             'type' => 'pdf',
-            'description' => 'Deskripsi bahan',
             'order' => 1,
         ]);
 
@@ -44,9 +42,7 @@ class MaterialTest extends TestCase
 
         $this->assertDatabaseHas('materials', [
             'subject_id' => $subject->id,
-            'title' => 'Bahan Tayang',
             'type' => 'pdf',
-            'description' => 'Deskripsi bahan',
             'sort_order' => 1,
             'created_by' => $admin->id,
         ]);
@@ -72,17 +68,13 @@ class MaterialTest extends TestCase
         ]);
 
         $material = $subject->materials()->create([
-            'title' => 'Judul Lama',
             'type' => 'pdf',
-            'description' => 'Deskripsi lama',
             'sort_order' => 1,
             'created_by' => $admin->id,
         ]);
 
         $response = $this->actingAs($admin)->put(route('admin.materials.update', $material), [
-            'title' => 'Judul Baru',
             'type' => 'video',
-            'description' => 'Deskripsi baru',
             'order' => 2,
         ]);
 
@@ -90,9 +82,7 @@ class MaterialTest extends TestCase
 
         $this->assertDatabaseHas('materials', [
             'id' => $material->id,
-            'title' => 'Judul Baru',
             'type' => 'video',
-            'description' => 'Deskripsi baru',
             'sort_order' => 2,
         ]);
     }
@@ -162,25 +152,21 @@ class MaterialTest extends TestCase
 
         // First material without order -> should be 1
         $this->actingAs($admin)->post(route('admin.subjects.materials.store', $subject), [
-            'title' => 'Materi Auto 1',
             'type' => 'pdf',
         ]);
 
         $this->assertDatabaseHas('materials', [
             'subject_id' => $subject->id,
-            'title' => 'Materi Auto 1',
             'sort_order' => 1,
         ]);
 
         // Second material without order -> should be 2
         $this->actingAs($admin)->post(route('admin.subjects.materials.store', $subject), [
-            'title' => 'Materi Auto 2',
             'type' => 'video',
         ]);
 
         $this->assertDatabaseHas('materials', [
             'subject_id' => $subject->id,
-            'title' => 'Materi Auto 2',
             'sort_order' => 2,
         ]);
     }

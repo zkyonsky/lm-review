@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
+ * @property int|null $review_period_id
  * @property int $material_id
  * @property int $reviewer_id
  * @property int $assigned_by
@@ -19,8 +20,9 @@ use Illuminate\Support\Carbon;
  * @property AssignmentStatus $status
  * @property-read Material $material
  * @property-read User $reviewer
+ * @property-read ReviewPeriod|null $period
  */
-#[Fillable(['material_id', 'reviewer_id', 'assigned_by', 'due_date', 'status'])]
+#[Fillable(['review_period_id', 'material_id', 'reviewer_id', 'assigned_by', 'due_date', 'status'])]
 class ReviewAssignment extends Model
 {
     use HasFactory;
@@ -31,6 +33,12 @@ class ReviewAssignment extends Model
             'due_date' => 'date',
             'status' => AssignmentStatus::class,
         ];
+    }
+
+    /** @return BelongsTo<ReviewPeriod, $this> */
+    public function period(): BelongsTo
+    {
+        return $this->belongsTo(ReviewPeriod::class, 'review_period_id');
     }
 
     /** @return BelongsTo<Material, $this> */

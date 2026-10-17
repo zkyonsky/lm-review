@@ -45,13 +45,11 @@ class TrainingTest extends TestCase
     {
         Training::factory()->create([
             'title' => 'Pelatihan Kepemimpinan Administrator',
-            'code' => 'PKA-2026',
             'created_by' => $this->admin->id,
         ]);
 
         Training::factory()->create([
             'title' => 'Pelatihan Teknis Keuangan',
-            'code' => 'PTK-2026',
             'created_by' => $this->admin->id,
         ]);
 
@@ -96,14 +94,12 @@ class TrainingTest extends TestCase
     public function test_can_create_training_with_status_defaulting_to_sedang_review(): void
     {
         $response = $this->actingAs($this->admin)->post(route('admin.trainings.store'), [
-            'code' => 'PLT-BARU-01',
             'title' => 'Pelatihan Baru Mantap',
-            'description' => 'Deskripsi pelatihan baru',
         ]);
 
         $response->assertRedirect(route('admin.trainings.index'));
         $this->assertDatabaseHas('trainings', [
-            'code' => 'PLT-BARU-01',
+            'title' => 'Pelatihan Baru Mantap',
             'status' => 'Sedang Review',
         ]);
     }
@@ -116,9 +112,7 @@ class TrainingTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->admin)->put(route('admin.trainings.update', $training), [
-            'code' => $training->code,
             'title' => $training->title,
-            'description' => $training->description,
             'status' => 'Selesai Review',
         ]);
 
@@ -158,6 +152,79 @@ class TrainingTest extends TestCase
         $response->assertOk();
         $this->assertStringContainsString('text/csv', $response->headers->get('content-type') ?? '');
         $this->assertStringContainsString('laporan_ulasan_', $response->headers->get('content-disposition') ?? '');
+    }
+
+    public function test_can_delete_trainings_in_bulk(): void
+    {
+        $t1 = Training::factory()->create([
+            'created_by' => $this->admin->id,
+        ]);
+        $t2 = Training::factory()->create([
+            'created_by' => $this->admin->id,
+        ]);
+
+        $response = $this->actingAs($this->admin)->post(route('admin.trainings.destroy.bulk'), [
+            'training_ids' => [$t1->id, $t2->id],
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success', '2 pelatihan berhasil dihapus.');
+
+        $this->assertSoftDeleted('trainings', ['id' => $t1->id]);
+        $this->assertSoftDeleted('trainings', ['id' => $t2->id]);
+    }
+
+    public function test_bulk_delete_validates_training_ids(): void
+    {
+        $response = $this->actingAs($this->admin)->post(route('admin.trainings.destroy.bulk'), [
+            'training_ids' => [],
+        ]);
+
+        $response->assertSessionHasErrors('training_ids');
+    }
+
+    public function test_non_admin_cannot_bulk_delete_trainings(): void
+    {
+        Role::findOrCreate('reviewer');
+        $user = \App\Models\User::factory()->create();
+        $user->assignRole('reviewer');
+
+        $t1 = Training::factory()->create([
+            'created_by' => $this->admin->id,
+        ]);
+
+        $response = $this->actingAs($user)->post(route('admin.trainings.destroy.bulk'), [
+            'training_ids' => [$t1->id],
+        ]);
+
+        $response->assertForbidden();
+    }
+
+    public function test_training_index_shows_materials_and_reviewed_materials_count(): void
+    {
+        $training = Training::factory()->create(['created_by' => $this->admin->id]);
+        $subject = \App\Models\Subject::factory()->create(['training_id' => $training->id]);
+
+        \App\Models\Material::factory()->create([
+            'subject_id' => $subject->id,
+            'status' => \App\Enums\MaterialStatus::Reviewed,
+            'created_by' => $this->admin->id,
+        ]);
+
+        \App\Models\Material::factory()->create([
+            'subject_id' => $subject->id,
+            'status' => \App\Enums\MaterialStatus::InReview,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $response = $this->actingAs($this->admin)->get(route('admin.trainings.index'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('admin/trainings/index')
+            ->where('trainings.data.0.materials_count', 2)
+            ->where('trainings.data.0.reviewed_materials_count', 1)
+        );
     }
 }
 

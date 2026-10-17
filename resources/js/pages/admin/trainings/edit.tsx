@@ -7,9 +7,7 @@ import { Label } from '@/components/ui/label';
 
 type Training = {
     id: number;
-    code: string;
     title: string;
-    description: string | null;
     status: string;
 };
 
@@ -21,9 +19,7 @@ export default function Edit({
     statuses?: string[];
 }) {
     const { data, setData, put, processing, errors } = useForm({
-        code: training.code || '',
         title: training.title || '',
-        description: training.description || '',
         status: training.status || 'Sedang Review',
     });
 
@@ -59,16 +55,6 @@ export default function Edit({
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="code">Kode Pelatihan</Label>
-                                <Input
-                                    id="code"
-                                    value={data.code}
-                                    onChange={(e) => setData('code', e.target.value)}
-                                    placeholder="Contoh: LATSAR-2026"
-                                />
-                                {errors.code && <p className="text-sm text-destructive">{errors.code}</p>}
-                            </div>
 
                             <div className="space-y-2">
                                 <Label htmlFor="title">Judul Pelatihan</Label>
@@ -96,18 +82,6 @@ export default function Edit({
                                     ))}
                                 </select>
                                 {errors.status && <p className="text-sm text-destructive">{errors.status}</p>}
-                            </div>
-                            
-                            <div className="space-y-2">
-                                <Label htmlFor="description">Deskripsi</Label>
-                                <textarea
-                                    id="description"
-                                    value={data.description}
-                                    onChange={(e) => setData('description', e.target.value)}
-                                    placeholder="Deskripsi singkat mengenai pelatihan ini..."
-                                    className="flex min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                                />
-                                {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
                             </div>
                         </CardContent>
                         <div className="flex items-center justify-end border-t border-border p-4 bg-muted/20">

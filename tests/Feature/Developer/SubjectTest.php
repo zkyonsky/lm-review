@@ -77,8 +77,8 @@ class SubjectTest extends TestCase
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
             ->component('developer/subjects/index')
-            ->has('subjects', 1)
-            ->where('subjects.0.id', $this->assignedSubject->id)
+            ->has('subjects.data', 1)
+            ->where('subjects.data.0.id', $this->assignedSubject->id)
         );
     }
 
@@ -103,16 +103,13 @@ class SubjectTest extends TestCase
     public function test_developer_can_create_material_in_assigned_subject()
     {
         $response = $this->actingAs($this->developer)->post(route('developer.subjects.materials.store', $this->assignedSubject), [
-            'title' => 'Modul 1 Pengenalan',
             'type' => 'pdf',
-            'description' => 'Deskripsi materi pengenalan',
             'order' => 1,
         ]);
 
         $response->assertRedirect(route('developer.subjects.show', $this->assignedSubject));
         $this->assertDatabaseHas('materials', [
             'subject_id' => $this->assignedSubject->id,
-            'title' => 'Modul 1 Pengenalan',
             'created_by' => $this->developer->id,
         ]);
     }
@@ -120,7 +117,6 @@ class SubjectTest extends TestCase
     public function test_uploading_new_version_automatically_assigns_subject_reviewers()
     {
         $material = $this->assignedSubject->materials()->create([
-            'title' => 'Modul PDF',
             'type' => 'pdf',
             'created_by' => $this->developer->id,
         ]);
@@ -143,5 +139,232 @@ class SubjectTest extends TestCase
             'reviewer_id' => $this->reviewer->id,
             'status' => 'draft',
         ]);
+    }
+
+    public function test_developer_subjects_index_does_not_show_subjects_from_deleted_trainings(): void
+    {
+        // Soft delete training
+        $this->assignedSubject->training->delete();
+
+        $response = $this->actingAs($this->developer)->get(route('developer.subjects.index'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('developer/subjects/index')
+            ->has('subjects.data', 0)
+        );
+    }
+
+    public function test_developer_cannot_view_subject_detail_when_training_is_deleted(): void
+    {
+        // Soft delete training (cascades to subject)
+        $this->assignedSubject->training->delete();
+
+        $response = $this->actingAs($this->developer)->get(route('developer.subjects.show', $this->assignedSubject));
+
+        $response->assertNotFound();
+    }
+
+    public function test_deleting_training_cascades_soft_delete_to_subjects(): void
+    {
+        $training = $this->assignedSubject->training;
+        $subjectId = $this->assignedSubject->id;
+
+        $training->delete();
+
+        $this->assertSoftDeleted('trainings', ['id' => $training->id]);
+        $this->assertSoftDeleted('subjects', ['id' => $subjectId]);
+    }
+
+    public function test_developer_subjects_index_has_pagination(): void
+    {
+        $admin = User::role('admin')->first();
+        $training = Training::create([
+            'title' => 'Pelatihan Tambahan',
+            'created_by' => $admin->id,
+        ]);
+
+        for ($i = 1; $i <= 14; $i++) {
+            $subj = Subject::create([
+                'training_id' => $training->id,
+                'title' => "Mata Pelatihan Ke-{$i}",
+                'sort_order' => $i + 2,
+            ]);
+            $subj->assignedUsers()->attach($this->developer->id, [
+                'role' => 'pengembang',
+                'assigned_by' => $admin->id,
+            ]);
+        }
+
+        $response = $this->actingAs($this->developer)->get(route('developer.subjects.index'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('developer/subjects/index')
+            ->has('subjects.data', 10)
+            ->where('subjects.total', 15)
+            ->has('subjects.links')
+        );
+    }
+
+    public function test_developer_can_filter_subjects_by_search_or_training_name(): void
+    {
+        $admin = User::role('admin')->first();
+        $training2 = Training::create([
+            'title' => 'Pelatihan Kepemimpinan Pengawas',
+            'created_by' => $admin->id,
+        ]);
+
+        $subj2 = Subject::create([
+            'training_id' => $training2->id,
+            'title' => 'Manajemen Mutu Pelayanan',
+            'sort_order' => 1,
+        ]);
+        $subj2->assignedUsers()->attach($this->developer->id, [
+            'role' => 'pengembang',
+            'assigned_by' => $admin->id,
+        ]);
+
+        // Filter by training name
+        $response = $this->actingAs($this->developer)->get(route('developer.subjects.index', [
+            'search' => 'Kepemimpinan',
+        ]));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('developer/subjects/index')
+            ->has('subjects.data', 1)
+            ->where('subjects.data.0.id', $subj2->id)
+        );
+
+        // Filter by subject title
+        $response = $this->actingAs($this->developer)->get(route('developer.subjects.index', [
+            'search' => 'Overview DAK',
+        ]));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('developer/subjects/index')
+            ->has('subjects.data', 1)
+            ->where('subjects.data.0.id', $this->assignedSubject->id)
+        );
+    }
+
+    public function test_developer_can_filter_subjects_by_review_status(): void
+    {
+        $admin = User::role('admin')->first();
+        $trainingDone = Training::create([
+            'title' => 'Pelatihan Selesai',
+            'status' => 'Selesai Review',
+            'created_by' => $admin->id,
+        ]);
+
+        $subjDone = Subject::create([
+            'training_id' => $trainingDone->id,
+            'title' => 'Mata Pelatihan Selesai',
+            'sort_order' => 1,
+        ]);
+        $subjDone->assignedUsers()->attach($this->developer->id, [
+            'role' => 'pengembang',
+            'assigned_by' => $admin->id,
+        ]);
+
+        // Filter status Selesai Review
+        $response = $this->actingAs($this->developer)->get(route('developer.subjects.index', [
+            'status' => 'Selesai Review',
+        ]));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('developer/subjects/index')
+            ->has('subjects.data', 1)
+            ->where('subjects.data.0.id', $subjDone->id)
+        );
+
+        // Filter status Sedang Review
+        $response = $this->actingAs($this->developer)->get(route('developer.subjects.index', [
+            'status' => 'Sedang Review',
+        ]));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('developer/subjects/index')
+            ->has('subjects.data', 1)
+            ->where('subjects.data.0.id', $this->assignedSubject->id)
+        );
+    }
+
+    public function test_developer_can_update_training_status_in_bulk(): void
+    {
+        $training = $this->assignedSubject->training;
+        $this->assertEquals('Sedang Review', $training->status);
+
+        $response = $this->actingAs($this->developer)->post(route('developer.trainings.status.bulk'), [
+            'subject_ids' => [$this->assignedSubject->id],
+            'status' => 'Selesai Review',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('trainings', [
+            'id' => $training->id,
+            'status' => 'Selesai Review',
+        ]);
+    }
+
+    public function test_developer_cannot_update_training_status_for_unassigned_subjects(): void
+    {
+        $admin = User::role('admin')->first();
+        $unassignedTraining = Training::create([
+            'title' => 'Pelatihan Orang Lain',
+            'status' => 'Sedang Review',
+            'created_by' => $admin->id,
+        ]);
+        $otherSubject = Subject::create([
+            'training_id' => $unassignedTraining->id,
+            'title' => 'Mata Pelatihan Lain',
+            'sort_order' => 1,
+        ]);
+        // Do NOT assign to developer
+
+        $response = $this->actingAs($this->developer)->post(route('developer.trainings.status.bulk'), [
+            'subject_ids' => [$otherSubject->id],
+            'status' => 'Selesai Review',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error');
+
+        $this->assertDatabaseHas('trainings', [
+            'id' => $unassignedTraining->id,
+            'status' => 'Sedang Review',
+        ]);
+    }
+
+    public function test_developer_subjects_index_shows_materials_and_reviewed_materials_count(): void
+    {
+        $admin = User::role('admin')->first();
+
+        \App\Models\Material::factory()->create([
+            'subject_id' => $this->assignedSubject->id,
+            'status' => \App\Enums\MaterialStatus::Reviewed,
+            'created_by' => $admin->id,
+        ]);
+
+        \App\Models\Material::factory()->create([
+            'subject_id' => $this->assignedSubject->id,
+            'status' => \App\Enums\MaterialStatus::InReview,
+            'created_by' => $admin->id,
+        ]);
+
+        $response = $this->actingAs($this->developer)->get(route('developer.subjects.index'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('developer/subjects/index')
+            ->where('subjects.data.0.materials_count', 2)
+            ->where('subjects.data.0.reviewed_materials_count', 1)
+        );
     }
 }

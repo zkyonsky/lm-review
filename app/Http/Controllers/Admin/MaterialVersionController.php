@@ -13,8 +13,11 @@ class MaterialVersionController extends Controller
 {
     public function create(Material $material)
     {
+        $material->load(['subject.training', 'versions.reviews.user']);
+
         return Inertia::render('admin/versions/create', [
-            'material' => $material
+            'material' => $material,
+            'latestVersion' => $material->currentVersion ?? $material->versions()->first(),
         ]);
     }
 
@@ -24,6 +27,7 @@ class MaterialVersionController extends Controller
             'google_drive_id' => 'nullable|string',
             'scorm_file' => 'nullable|file|mimes:zip|max:512000', // max 500MB
             'is_active' => 'nullable|boolean',
+            'changelog' => 'nullable|string',
         ]);
 
         // Validate that at least one is provided based on material type
@@ -41,6 +45,7 @@ class MaterialVersionController extends Controller
 
         $versionData = [
             'version_number' => $newVersionNumber,
+            'changelog' => $request->input('changelog'),
             'created_by' => auth()->id(),
         ];
 
@@ -69,9 +74,11 @@ class MaterialVersionController extends Controller
         $version = $material->versions()->create($versionData);
 
         $isActive = $request->boolean('is_active', true);
+        $materialUpdate = ['status' => \App\Enums\MaterialStatus::InReview];
         if ($isActive || is_null($material->current_version_id)) {
-            $material->update(['current_version_id' => $version->id]);
+            $materialUpdate['current_version_id'] = $version->id;
         }
+        $material->update($materialUpdate);
 
         // Automatically assign reviewers who are assigned to the subject
         $subjectReviewers = $material->subject->reviewers;
@@ -81,8 +88,13 @@ class MaterialVersionController extends Controller
                 'reviewer_id' => $reviewer->id,
             ], [
                 'assigned_by' => auth()->id(),
-                'status' => 'pending',
+                'status' => \App\Enums\AssignmentStatus::Pending,
             ]);
+
+            // Re-open assignment for new cycle if previously submitted
+            if ($assignment->status === \App\Enums\AssignmentStatus::Submitted) {
+                $assignment->update(['status' => \App\Enums\AssignmentStatus::Pending]);
+            }
 
             $review = \App\Models\Review::firstOrCreate([
                 'material_version_id' => $version->id,

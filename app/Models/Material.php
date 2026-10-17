@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\AssignmentStatus;
 use App\Enums\MaterialStatus;
 use App\Enums\MaterialType;
+use App\Enums\ReviewStatus;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -19,27 +21,34 @@ use Spatie\Activitylog\Traits\LogsActivity;
 /**
  * @property int $id
  * @property int $subject_id
- * @property string $title
- * @property string|null $description
  * @property MaterialType $type
  * @property MaterialStatus $status
  * @property int|null $current_version_id
  * @property int $sort_order
  * @property int $created_by
+ * @property-read string $title
  * @property-read int $order
  * @property-read Subject $subject
  * @property-read MaterialVersion|null $currentVersion
  */
-#[Fillable(['subject_id', 'title', 'description', 'type', 'status', 'current_version_id', 'sort_order', 'created_by'])]
+#[Fillable(['subject_id', 'type', 'status', 'current_version_id', 'sort_order', 'created_by'])]
 class Material extends Model
 {
     use HasFactory, LogsActivity, SoftDeletes;
 
-    protected $appends = ['order'];
+    protected $appends = ['order', 'title'];
 
     protected function order(): Attribute
     {
         return Attribute::get(fn () => $this->sort_order);
+    }
+
+    protected function title(): Attribute
+    {
+        return Attribute::get(function () {
+            $typeLabel = $this->type instanceof MaterialType ? $this->type->label() : strtoupper((string) ($this->type ?? 'Materi'));
+            return 'Materi ' . $typeLabel . ($this->sort_order ? " #{$this->sort_order}" : '');
+        });
     }
 
     protected function casts(): array
@@ -53,7 +62,7 @@ class Material extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['title', 'status', 'current_version_id'])
+            ->logOnly(['status', 'current_version_id', 'type'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
@@ -109,5 +118,30 @@ class Material extends Model
     public function isAssignedTo(User $user): bool
     {
         return $this->assignments()->where('reviewer_id', $user->id)->exists();
+    }
+
+    /**
+     * Scope query untuk materi yang telah direviu.
+     *
+     * @param  Builder<Material>  $query
+     * @param  int|null  $periodId
+     */
+    public function scopeReviewed(Builder $query, ?int $periodId = null): void
+    {
+        $query->where(function (Builder $sub) use ($periodId) {
+            if ($periodId) {
+                $sub->whereHas('assignments', function (Builder $a) use ($periodId) {
+                    $a->where('status', AssignmentStatus::Submitted)
+                        ->where('review_period_id', $periodId);
+                })->orWhereHas('versions.reviews', function (Builder $r) use ($periodId) {
+                    $r->where('status', ReviewStatus::Submitted)
+                        ->whereHas('assignment', fn (Builder $a) => $a->where('review_period_id', $periodId));
+                });
+            } else {
+                $sub->whereIn('materials.status', [MaterialStatus::Reviewed, MaterialStatus::Completed])
+                    ->orWhereHas('assignments', fn (Builder $a) => $a->where('status', AssignmentStatus::Submitted))
+                    ->orWhereHas('versions.reviews', fn (Builder $r) => $r->where('status', ReviewStatus::Submitted));
+            }
+        });
     }
 }

@@ -19,8 +19,6 @@ class MaterialFactory extends Factory
     {
         return [
             'subject_id' => Subject::factory(),
-            'title' => fake()->sentence(3),
-            'description' => fake()->sentence(),
             'type' => MaterialType::Pdf,
             'status' => MaterialStatus::Draft,
             'sort_order' => 0,

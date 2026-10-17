@@ -139,7 +139,7 @@ class ReviewWorkspaceTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('admin/workspace/index')
             ->where('review.id', $review->id)
-            ->where('review.material_version.material.title', 'Materi Pembelajaran A')
+            ->where('review.material_version.material.title', $this->material->title)
             ->has('review.comments', 1)
             ->where('review.comments.0.body', 'Perbaiki slide nomor 5.')
             ->has('allReviews', 1)

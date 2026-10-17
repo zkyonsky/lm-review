@@ -30,8 +30,6 @@ export default function Create({ subject, types, nextOrder = 1 }: Props) {
     const initialType = typeof firstType === 'string' ? firstType : (firstType?.value || 'pdf');
 
     const { data, setData, post, processing, errors } = useForm({
-        title: '',
-        description: '',
         type: initialType,
         order: nextOrder,
     });
@@ -68,17 +66,6 @@ export default function Create({ subject, types, nextOrder = 1 }: Props) {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="title">Judul Materi</Label>
-                                <Input
-                                    id="title"
-                                    value={data.title}
-                                    onChange={(e) => setData('title', e.target.value)}
-                                    placeholder="Contoh: Modul 1 - Pendahuluan"
-                                    required
-                                />
-                                {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
-                            </div>
 
                             <div className="space-y-2">
                                 <Label htmlFor="type">Tipe Materi</Label>
@@ -99,18 +86,6 @@ export default function Create({ subject, types, nextOrder = 1 }: Props) {
                                     })}
                                 </select>
                                 {errors.type && <p className="text-sm text-destructive">{errors.type}</p>}
-                            </div>
-                            
-                            <div className="space-y-2">
-                                <Label htmlFor="description">Deskripsi</Label>
-                                <textarea
-                                    id="description"
-                                    value={data.description}
-                                    onChange={(e) => setData('description', e.target.value)}
-                                    placeholder="Deskripsi singkat mengenai materi ini..."
-                                    className="flex min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                                />
-                                {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
                             </div>
 
                             <div className="space-y-2">

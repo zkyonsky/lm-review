@@ -109,7 +109,7 @@ export default function Show({ version, availableReviewers }: Props) {
                         </Button>
                         <div>
                             <p className="text-sm text-primary font-medium mb-1">
-                                {version.material.subject.training.title} &raquo; {version.material.subject.title} &raquo; {version.material.title} ({version.material.type.toUpperCase()})
+                                {version.material?.subject?.training?.title ? `${version.material.subject.training.title} » ` : ''}{version.material?.subject?.title ? `${version.material.subject.title} » ` : ''}{version.material?.title ?? 'Materi'} ({version.material?.type?.toUpperCase() ?? 'FILE'})
                             </p>
                             <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2">
                                 Versi {version.version_number}

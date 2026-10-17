@@ -22,25 +22,35 @@ class DashboardController extends Controller
         if ($isAdmin) {
             $stats['admin'] = [
                 'total_trainings' => Training::count(),
-                'total_materials' => Material::count(),
+                'total_materials' => Material::whereHas('subject.training')->count(),
                 'total_reviewers' => User::role('reviewer')->count(),
-                'reviews_submitted' => Review::where('status', 'submitted')->count(),
-                'reviews_draft' => Review::where('status', 'draft')->count(),
+                'reviews_submitted' => Review::whereHasTraining()->where('status', 'submitted')->count(),
+                'reviews_draft' => Review::whereHasTraining()->where('status', 'draft')->count(),
             ];
         }
 
         if ($user->hasAnyRole(['developer', 'pengembang'])) {
-            $assignedSubjectIds = $user->developerSubjects()->pluck('subjects.id');
+            $assignedSubjectIds = $user->developerSubjects()
+                ->whereHas('training')
+                ->pluck('subjects.id');
             $stats['developer'] = [
                 'total_subjects' => $assignedSubjectIds->count(),
-                'total_materials' => Material::whereIn('subject_id', $assignedSubjectIds)->count(),
+                'total_materials' => Material::whereIn('subject_id', $assignedSubjectIds)
+                    ->whereHas('subject.training')
+                    ->count(),
             ];
         }
 
         if ($isReviewer) {
             $stats['reviewer'] = [
-                'pending_tasks' => Review::where('reviewer_id', $user->id)->where('status', 'draft')->count(),
-                'completed_tasks' => Review::where('reviewer_id', $user->id)->where('status', 'submitted')->count(),
+                'pending_tasks' => Review::where('reviewer_id', $user->id)
+                    ->where('status', 'draft')
+                    ->whereHasTraining()
+                    ->count(),
+                'completed_tasks' => Review::where('reviewer_id', $user->id)
+                    ->where('status', 'submitted')
+                    ->whereHasTraining()
+                    ->count(),
             ];
         }
 

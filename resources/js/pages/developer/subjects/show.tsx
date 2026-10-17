@@ -35,8 +35,7 @@ type MaterialVersion = {
 
 type Material = {
     id: number;
-    title: string;
-    description: string | null;
+    title?: string;
     type: string;
     order: number;
     current_version_id?: number | null;
@@ -52,9 +51,6 @@ type Training = {
 type Subject = {
     id: number;
     title: string;
-    code?: string | null;
-    jp?: number | null;
-    description: string | null;
     training: Training;
     materials: Material[];
     developers: User[];
@@ -103,26 +99,10 @@ export default function Show({ subject }: Props) {
                             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                 {subject.training?.title}
                             </span>
-                            {subject.code && (
-                                <Badge variant="outline" className="text-xs">
-                                    {subject.code}
-                                </Badge>
-                            )}
-                            {subject.jp && (
-                                <Badge variant="secondary" className="text-xs flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {subject.jp} JP
-                                </Badge>
-                            )}
                         </div>
                         <h1 className="text-2xl font-bold tracking-tight text-foreground mt-0.5">
                             {subject.title}
                         </h1>
-                        {subject.description && (
-                            <p className="text-sm text-muted-foreground mt-1 max-w-3xl">
-                                {subject.description}
-                            </p>
-                        )}
                     </div>
                 </div>
 
@@ -288,7 +268,6 @@ export default function Show({ subject }: Props) {
                                         <tr>
                                             <th className="w-10 p-3"></th>
                                             <th className="font-medium p-3 w-16">Urutan</th>
-                                            <th className="font-medium p-3">Materi</th>
                                             <th className="font-medium p-3">Tipe</th>
                                             <th className="font-medium p-3">Versi Aktif</th>
                                             <th className="font-medium p-3">Total Versi</th>
@@ -316,16 +295,6 @@ export default function Show({ subject }: Props) {
                                                         <GripVertical className="h-4 w-4 mx-auto" />
                                                     </td>
                                                     <td className="p-3 font-mono font-medium text-foreground">{mat.order ?? index + 1}</td>
-                                                    <td className="p-3">
-                                                        <div className="font-medium text-foreground">
-                                                            {mat.title}
-                                                        </div>
-                                                        {mat.description && (
-                                                            <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                                                                {mat.description}
-                                                            </div>
-                                                        )}
-                                                    </td>
                                                     <td className="p-3">
                                                         <Badge variant="outline" className="text-xs uppercase">
                                                             {mat.type}

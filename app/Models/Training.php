@@ -12,14 +12,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
- * @property string $code
  * @property string $title
- * @property string|null $description
  * @property int|null $year
  * @property string $status
  * @property int $created_by
  */
-#[Fillable(['code', 'title', 'description', 'year', 'status', 'created_by'])]
+#[Fillable(['title', 'year', 'status', 'created_by'])]
 class Training extends Model
 {
     use HasFactory, SoftDeletes;
@@ -31,6 +29,27 @@ class Training extends Model
         self::STATUS_SEDANG_REVIEW,
         self::STATUS_SELESAI_REVIEW,
     ];
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Training $training) {
+            if ($training->isForceDeleting()) {
+                foreach ($training->subjects()->withTrashed()->get() as $subject) {
+                    $subject->forceDelete();
+                }
+            } else {
+                foreach ($training->subjects as $subject) {
+                    $subject->delete();
+                }
+            }
+        });
+
+        static::restoring(function (Training $training) {
+            foreach ($training->subjects()->withTrashed()->get() as $subject) {
+                $subject->restore();
+            }
+        });
+    }
 
     /** @return HasMany<Subject, $this> */
     public function subjects(): HasMany
@@ -48,5 +67,31 @@ class Training extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** @return \Illuminate\Database\Eloquent\Relations\BelongsToMany<ReviewPeriod, $this> */
+    public function periods(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(ReviewPeriod::class, 'review_period_training')
+            ->withTimestamps();
+    }
+
+    public function getReviewStatus(?int $periodId = null): string
+    {
+        $total = $this->materials_count ?? $this->materials()->count();
+        if ($total === 0) {
+            return 'Belum Ada Materi';
+        }
+
+        $reviewed = $this->reviewed_materials_count ?? $this->materials()->reviewed($periodId)->count();
+        if ($reviewed >= $total) {
+            return 'Selesai Reviu';
+        }
+
+        if ($reviewed > 0) {
+            return 'Sedang Direviu';
+        }
+
+        return 'Belum Direviu';
     }
 }

@@ -25,6 +25,7 @@ class ReviewWorkspaceController extends Controller
         $review->load([
             'materialVersion.material.subject.training', 
             'materialVersion.scormPackage.scos',
+            'materialVersion.latestAiAnalysis',
             'user',
             'comments' => function ($query) {
                 $query->root()->with(['replies.user', 'user', 'sco']);
@@ -32,9 +33,34 @@ class ReviewWorkspaceController extends Controller
         ]);
 
         $this->checkSubjectAccess($review);
+
+        $material = $review->materialVersion->material;
+        $currentVersionNumber = $review->materialVersion->version_number;
+
+        // Fetch previous reviews for delta / continuous review tracking across versions and periods
+        $previousReviews = Review::where('reviewer_id', $review->reviewer_id)
+            ->where('id', '<', $review->id)
+            ->whereHas('materialVersion', function ($q) use ($material) {
+                $q->where('material_id', $material->id);
+            })
+            ->with([
+                'materialVersion',
+                'assignment.period',
+                'comments' => function ($query) {
+                    $query->root()->with(['replies.user', 'user', 'sco']);
+                }
+            ])
+            ->orderByDesc('id')
+            ->get();
+
+        $allVersions = $material->versions()
+            ->orderByDesc('version_number')
+            ->get(['id', 'material_id', 'version_number', 'changelog', 'created_at']);
         
         return Inertia::render('developer/workspace/index', [
-            'review' => $review
+            'review' => $review,
+            'previousReviews' => $previousReviews,
+            'allVersions' => $allVersions,
         ]);
     }
 

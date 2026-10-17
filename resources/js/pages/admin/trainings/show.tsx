@@ -12,15 +12,12 @@ import type { SharedData } from '@/types';
 type Subject = {
     id: number;
     title: string;
-    description: string | null;
     order: number;
 };
 
 type Training = {
     id: number;
-    code: string;
     title: string;
-    description: string | null;
     created_at: string;
     status?: string;
     subjects: Subject[];
@@ -62,14 +59,10 @@ export default function Show({ training }: { training: Training }) {
                         <div>
                             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                                 <h1 className="text-2xl font-semibold text-foreground">{training.title}</h1>
-                                <Badge variant="outline" className="font-mono">{training.code}</Badge>
                                 <Badge className={training.status === 'Selesai Review' ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-amber-500 hover:bg-amber-600 text-white'}>
                                     {training.status || 'Sedang Review'}
                                 </Badge>
                             </div>
-                            <p className="text-sm text-muted-foreground mt-1">
-                                {training.description || 'Tidak ada deskripsi.'}
-                            </p>
                         </div>
                     </div>
                 </div>

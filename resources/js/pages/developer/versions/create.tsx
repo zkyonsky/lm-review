@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Spinner } from '@/components/ui/spinner';
 
@@ -12,6 +13,13 @@ type Material = {
     id: number;
     title: string;
     type: string;
+};
+
+type LatestVersion = {
+    id: number;
+    version_number: number;
+    changelog?: string | null;
+    created_at?: string;
 };
 
 function formatBytes(bytes?: number): string {
@@ -22,11 +30,12 @@ function formatBytes(bytes?: number): string {
     return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
 }
 
-export default function Create({ material }: { material: Material }) {
+export default function Create({ material, latestVersion }: { material: Material; latestVersion?: LatestVersion | null }) {
     const { data, setData, post, processing, progress, errors } = useForm({
         google_drive_id: '',
         scorm_file: null as File | null,
         is_active: true,
+        changelog: '',
     });
 
     const submit = (e: React.FormEvent) => {
@@ -53,6 +62,20 @@ export default function Create({ material }: { material: Material }) {
                         </p>
                     </div>
                 </div>
+
+                {latestVersion && (
+                    <div className="bg-primary/5 border border-primary/20 rounded-lg p-3.5 text-xs flex items-center justify-between">
+                        <div>
+                            <span className="font-semibold text-foreground">Siklus Pemutakhiran Materi:</span>
+                            <span className="text-muted-foreground ml-1.5">
+                                Mengunggah pembaruan untuk versi berikutnya (v{latestVersion.version_number + 1}).
+                            </span>
+                        </div>
+                        <Badge variant="outline" className="font-mono text-[11px]">
+                            Sebelumnya: v{latestVersion.version_number}
+                        </Badge>
+                    </div>
+                )}
 
                 <Card>
                     <form onSubmit={submit}>
@@ -139,7 +162,27 @@ export default function Create({ material }: { material: Material }) {
                                 </div>
                             )}
 
-                            <div className="space-y-3 pt-4">
+                            <div className="space-y-2 pt-4 border-t border-border">
+                                <Label htmlFor="changelog" className="text-sm font-medium flex items-center justify-between">
+                                    <span>Catatan Pemutakhiran / Perubahan (Changelog)</span>
+                                    <span className="text-xs text-muted-foreground font-normal">Sangat dianjurkan untuk Siklus Reviu</span>
+                                </Label>
+                                <textarea
+                                    id="changelog"
+                                    rows={3}
+                                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                    placeholder="Jelaskan bagian mana saja yang diubah, diperbarui, atau tindak lanjut dari catatan reviu periode sebelumnya..."
+                                    value={data.changelog}
+                                    disabled={processing}
+                                    onChange={(e) => setData('changelog', e.target.value)}
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Catatan ini akan langsung ditampilkan kepada reviewer agar reviewer fokus pada bagian yang dimutakhirkan.
+                                </p>
+                                {errors.changelog && <p className="text-sm text-destructive">{errors.changelog}</p>}
+                            </div>
+
+                            <div className="space-y-3 pt-2">
                                 <div className="flex items-center space-x-2">
                                     <Checkbox 
                                         id="is_active" 

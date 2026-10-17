@@ -49,9 +49,7 @@ class StmkTest extends TestCase
         $this->reviewer->assignRole('reviewer');
 
         $this->training = Training::create([
-            'code' => 'PLT-TEST-01',
             'title' => 'Pelatihan Pengelolaan Keuangan',
-            'description' => 'Deskripsi pelatihan tes',
             'created_by' => $this->admin->id,
         ]);
 
@@ -165,5 +163,62 @@ class StmkTest extends TestCase
             ]));
 
         $response->assertOk();
+    }
+
+    public function test_uses_microlearning_templates_when_training_starts_with_microlearning(): void
+    {
+        $stmkService = app(StmkService::class);
+
+        $microTraining = Training::create([
+            'title' => 'Microlearning Pembuatan Konten Pembelajaran',
+            'created_by' => $this->admin->id,
+        ]);
+
+        $microSubject = Subject::create([
+            'training_id' => $microTraining->id,
+            'title' => 'Desain Konten',
+            'code' => 'MP-ML-01',
+            'sort_order' => 1,
+        ]);
+
+        $microSubject->assignedUsers()->attach($this->developer->id, [
+            'role' => 'pengembang',
+            'assigned_by' => $this->admin->id,
+        ]);
+        $microSubject->assignedUsers()->attach($this->reviewer->id, [
+            'role' => 'reviewer',
+            'assigned_by' => $this->admin->id,
+        ]);
+
+        // Template path check
+        $devTemplate = $stmkService->getTemplatePath('pengembangan', $microTraining);
+        $revTemplate = $stmkService->getTemplatePath('reviu', $microTraining);
+
+        $this->assertNotNull($devTemplate);
+        $this->assertStringContainsString('Microleaning', $devTemplate);
+
+        $this->assertNotNull($revTemplate);
+        $this->assertStringContainsString('Microlearning', $revTemplate);
+
+        // Generate development doc
+        $docxPath = $stmkService->generatePengembanganDoc($this->developer, $microSubject, $microTraining);
+        $this->assertFileExists($docxPath);
+        @unlink($docxPath);
+
+        // Generate reviu doc
+        $docxRevPath = $stmkService->generateReviuDoc($this->reviewer, $microSubject, $microTraining);
+        $this->assertFileExists($docxRevPath);
+        @unlink($docxRevPath);
+
+        // Web route generation test
+        $responseDev = $this->actingAs($this->admin)
+            ->get(route('admin.trainings.stmk', ['training' => $microTraining->id, 'type' => 'pengembangan']));
+        $responseDev->assertOk();
+        $this->assertStringContainsString('.docx', $responseDev->headers->get('content-disposition') ?? '');
+
+        $responseRev = $this->actingAs($this->admin)
+            ->get(route('admin.trainings.stmk', ['training' => $microTraining->id, 'type' => 'reviu']));
+        $responseRev->assertOk();
+        $this->assertStringContainsString('.docx', $responseRev->headers->get('content-disposition') ?? '');
     }
 }

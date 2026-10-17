@@ -14,9 +14,7 @@ class TrainingFactory extends Factory
     public function definition(): array
     {
         return [
-            'code' => 'PLT-'.fake()->unique()->numerify('####'),
             'title' => 'Pelatihan '.fake()->words(3, true),
-            'description' => fake()->paragraph(),
             'year' => (int) now()->format('Y'),
             'status' => 'Sedang Review',
             'created_by' => User::factory(),

@@ -29,8 +29,7 @@ type User = {
 
 type Material = {
     id: number;
-    title: string;
-    description: string | null;
+    title?: string;
     type: string;
     order: number;
     versions: any[];
@@ -44,9 +43,6 @@ type Training = {
 type Subject = {
     id: number;
     title: string;
-    code?: string | null;
-    jp?: number | null;
-    description: string | null;
     training: Training;
     materials: Material[];
     developers: User[];
@@ -162,28 +158,15 @@ export default function Show({ subject, availableDevelopers = [], availableRevie
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Button variant="outline" size="icon" asChild>
-                            <Link href={`/admin/trainings/${subject.training.id}`}>
+                            <Link href={subject.training?.id ? `/admin/trainings/${subject.training.id}` : '/admin/trainings'}>
                                 <ArrowLeft className="h-4 w-4" />
                             </Link>
                         </Button>
                         <div>
                             <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm text-primary font-medium">{subject.training.title}</span>
-                                {subject.code && (
-                                    <Badge variant="outline" className="text-xs">
-                                        Kode: {subject.code}
-                                    </Badge>
-                                )}
-                                {subject.jp && (
-                                    <Badge variant="secondary" className="text-xs">
-                                        {subject.jp} JP
-                                    </Badge>
-                                )}
+                                <span className="text-sm text-primary font-medium">{subject.training?.title ?? 'Pelatihan'}</span>
                             </div>
                             <h1 className="text-2xl font-semibold text-foreground">{subject.title}</h1>
-                            <p className="text-sm text-muted-foreground mt-1">
-                                {subject.description || 'Tidak ada deskripsi.'}
-                            </p>
                         </div>
                     </div>
                 </div>
@@ -378,7 +361,6 @@ export default function Show({ subject, availableDevelopers = [], availableRevie
                                     <th className="w-10 p-4"></th>
                                     <th className="font-medium p-4 w-20">Urutan</th>
                                     <th className="font-medium p-4">Tipe</th>
-                                    <th className="font-medium p-4">Judul Materi</th>
                                     <th className="font-medium p-4">Jumlah Versi</th>
                                     <th className="font-medium p-4 text-right">Aksi</th>
                                 </tr>
@@ -386,7 +368,7 @@ export default function Show({ subject, availableDevelopers = [], availableRevie
                             <tbody className="divide-y divide-border">
                                 {!materials || materials.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                                        <td colSpan={5} className="p-8 text-center text-muted-foreground">
                                             Belum ada materi pada mata pelatihan ini.
                                         </td>
                                     </tr>
@@ -410,11 +392,9 @@ export default function Show({ subject, availableDevelopers = [], availableRevie
                                             </td>
                                             <td className="p-4 font-mono font-medium text-foreground">{material.order ?? index + 1}</td>
                                             <td className="p-4">
-                                                <Badge variant="outline">{material.type.toUpperCase()}</Badge>
-                                            </td>
-                                            <td className="p-4">
-                                                <Link href={`/admin/materials/${material.id}`} className="font-medium text-primary hover:underline">
-                                                    {material.title}
+                                                <Link href={`/admin/materials/${material.id}`} className="font-medium text-primary hover:underline flex items-center gap-2">
+                                                    <Badge variant="outline">{material.type.toUpperCase()}</Badge>
+                                                    <span className="text-xs text-muted-foreground">Materi #{material.order ?? index + 1}</span>
                                                 </Link>
                                             </td>
                                             <td className="p-4">

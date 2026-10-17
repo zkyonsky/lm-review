@@ -27,11 +27,28 @@ class ReportController extends Controller
             });
         }
 
+        $periodId = $request->query('period_id');
+        if ($periodId) {
+            $query->whereHas('review.reviewAssignment', function ($q) use ($periodId) {
+                $q->where('review_period_id', $periodId);
+            });
+        }
+
         $comments = $query->get();
 
         $trainingModel = $training ?? ($trainingId ? Training::find($trainingId) : null);
-        $slug = $trainingModel ? Str::slug($trainingModel->code ?: $trainingModel->title) . '_' : 'lm_review_';
-        $filename = "laporan_ulasan_{$slug}" . date('Y-m-d_H-i') . ".csv";
+        $periodModel = $periodId ? \App\Models\ReviewPeriod::find($periodId) : null;
+        $prefix = '';
+        if ($periodModel) {
+            $prefix .= Str::slug($periodModel->name) . '_';
+        }
+        if ($trainingModel) {
+            $prefix .= Str::slug($trainingModel->title) . '_';
+        }
+        if (!$prefix) {
+            $prefix = 'lm_review_';
+        }
+        $filename = "laporan_ulasan_{$prefix}" . date('Y-m-d_H-i') . ".csv";
 
         $headers = [
             "Content-type"        => "text/csv",

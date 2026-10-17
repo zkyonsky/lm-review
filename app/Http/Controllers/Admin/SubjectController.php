@@ -27,7 +27,6 @@ class SubjectController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
             'order' => 'nullable|integer|min:0',
         ]);
 
@@ -36,7 +35,6 @@ class SubjectController extends Controller
 
         $training->subjects()->create([
             'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
             'sort_order' => $validated['order'] ?? $nextOrder,
         ]);
 
@@ -98,13 +96,11 @@ class SubjectController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
             'order' => 'nullable|integer|min:0',
         ]);
 
         $subject->update([
             'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
             'sort_order' => $validated['order'] ?? $subject->sort_order,
         ]);
 

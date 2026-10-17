@@ -28,9 +28,7 @@ class MaterialController extends Controller
     public function store(Request $request, Subject $subject)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
             'type' => ['required', new Enum(MaterialType::class)],
-            'description' => 'nullable|string',
             'order' => 'nullable|integer|min:0',
         ]);
 
@@ -38,9 +36,7 @@ class MaterialController extends Controller
         $nextOrder = max($maxOrder, $subject->materials()->count()) + 1;
 
         $subject->materials()->create([
-            'title' => $validated['title'],
             'type' => $validated['type'],
-            'description' => $validated['description'] ?? null,
             'sort_order' => $validated['order'] ?? $nextOrder,
             'created_by' => auth()->id(),
         ]);
@@ -87,16 +83,12 @@ class MaterialController extends Controller
     public function update(Request $request, Material $material)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
             'type' => ['required', new Enum(MaterialType::class)],
-            'description' => 'nullable|string',
             'order' => 'nullable|integer|min:0',
         ]);
 
         $material->update([
-            'title' => $validated['title'],
             'type' => $validated['type'],
-            'description' => $validated['description'] ?? null,
             'sort_order' => $validated['order'] ?? $material->sort_order,
         ]);
 

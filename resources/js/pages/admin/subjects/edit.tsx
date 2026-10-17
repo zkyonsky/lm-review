@@ -13,7 +13,6 @@ type Training = {
 type Subject = {
     id: number;
     title: string;
-    description: string | null;
     order: number;
     training: Training;
     training_id: number;
@@ -22,7 +21,6 @@ type Subject = {
 export default function Edit({ subject }: { subject: Subject }) {
     const { data, setData, put, processing, errors } = useForm({
         title: subject.title || '',
-        description: subject.description || '',
         order: subject.order || 0,
     });
 
@@ -44,7 +42,7 @@ export default function Edit({ subject }: { subject: Subject }) {
                     <div>
                         <h1 className="text-2xl font-semibold text-foreground">Edit Mata Pelatihan</h1>
                         <p className="text-sm text-muted-foreground mt-1">
-                            Pelatihan: {subject.training.title}
+                            Pelatihan: {subject.training?.title ?? '-'}
                         </p>
                     </div>
                 </div>
@@ -67,18 +65,6 @@ export default function Edit({ subject }: { subject: Subject }) {
                                     placeholder="Contoh: Pengenalan Aplikasi"
                                 />
                                 {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
-                            </div>
-                            
-                            <div className="space-y-2">
-                                <Label htmlFor="description">Deskripsi</Label>
-                                <textarea
-                                    id="description"
-                                    value={data.description}
-                                    onChange={(e) => setData('description', e.target.value)}
-                                    placeholder="Deskripsi singkat..."
-                                    className="flex min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                                />
-                                {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
                             </div>
 
                             <div className="space-y-2">

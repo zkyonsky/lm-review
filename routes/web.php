@@ -11,6 +11,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Admin Routes
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('users/import/template', [App\Http\Controllers\Admin\UserController::class, 'downloadTemplate'])->name('users.import.template');
+        Route::post('users/import', [App\Http\Controllers\Admin\UserController::class, 'import'])->name('users.import');
         Route::resource('users', App\Http\Controllers\Admin\UserController::class)->except(['show']);
         Route::get('roles-permissions', [App\Http\Controllers\Admin\RolePermissionController::class, 'index'])->name('roles-permissions.index');
         Route::put('roles-permissions/{role}', [App\Http\Controllers\Admin\RolePermissionController::class, 'update'])->name('roles-permissions.update');
@@ -18,6 +20,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('trainings/{training}/stmk/{type}', [App\Http\Controllers\Admin\TrainingController::class, 'generateStmk'])->name('trainings.stmk')->whereIn('type', ['pengembangan', 'reviu']);
         Route::match(['get', 'post'], 'trainings/stmk/bulk', [App\Http\Controllers\Admin\TrainingController::class, 'generateStmkBulk'])->name('trainings.stmk.bulk');
         Route::post('trainings/status/bulk', [App\Http\Controllers\Admin\TrainingController::class, 'updateStatusBulk'])->name('trainings.status.bulk');
+        Route::post('trainings/delete/bulk', [App\Http\Controllers\Admin\TrainingController::class, 'destroyBulk'])->name('trainings.destroy.bulk');
+        Route::get('trainings/import/template', [App\Http\Controllers\Admin\TrainingImportController::class, 'downloadTemplate'])->name('trainings.import.template');
+        Route::post('trainings/import', [App\Http\Controllers\Admin\TrainingImportController::class, 'import'])->name('trainings.import');
         Route::resource('trainings', App\Http\Controllers\Admin\TrainingController::class);
         Route::post('trainings/{training}/subjects/reorder', [App\Http\Controllers\Admin\SubjectController::class, 'reorder'])->name('trainings.subjects.reorder');
         Route::resource('trainings.subjects', App\Http\Controllers\Admin\SubjectController::class)->shallow();
@@ -44,6 +49,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('workspace/{review}/comments/{comment}/reply', [App\Http\Controllers\Admin\ReviewWorkspaceController::class, 'reply'])->name('workspace.comments.reply');
         Route::patch('workspace/{review}/comments/{comment}/toggle', [App\Http\Controllers\Admin\ReviewWorkspaceController::class, 'toggleStatus'])->name('workspace.comments.toggle');
 
+        // Review Periods
+        Route::post('periods/{period}/enroll', [App\Http\Controllers\Admin\ReviewPeriodController::class, 'enrollTrainings'])->name('periods.enroll');
+        Route::delete('periods/{period}/trainings/{training}', [App\Http\Controllers\Admin\ReviewPeriodController::class, 'removeTraining'])->name('periods.trainings.remove');
+        Route::resource('periods', App\Http\Controllers\Admin\ReviewPeriodController::class)->except(['create', 'edit']);
+
         // Reports
         Route::get('reports/comments', [App\Http\Controllers\Admin\ReportController::class, 'exportComments'])->name('reports.comments');
         Route::get('trainings/{training}/report', [App\Http\Controllers\Admin\ReportController::class, 'exportComments'])->name('trainings.report');
@@ -55,11 +65,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('workspace/{review}', [App\Http\Controllers\Reviewer\ReviewController::class, 'workspace'])->name('workspace.show');
         Route::post('workspace/{review}/comments', [App\Http\Controllers\Reviewer\ReviewController::class, 'storeComment'])->name('workspace.comments.store');
         Route::post('workspace/{review}/submit', [App\Http\Controllers\Reviewer\ReviewController::class, 'submitReview'])->name('workspace.submit');
+        Route::post('workspace/{review}/ai-analyze', [App\Http\Controllers\AiAnalysisController::class, 'analyze'])->name('workspace.ai-analyze');
     });
 
     // Developer / Pengembang Routes
     Route::middleware('role:pengembang|developer')->prefix('developer')->name('developer.')->group(function () {
         Route::get('subjects', [App\Http\Controllers\Developer\SubjectController::class, 'index'])->name('subjects.index');
+        Route::post('trainings/status/bulk', [App\Http\Controllers\Developer\SubjectController::class, 'updateStatusBulk'])->name('trainings.status.bulk');
         Route::get('subjects/{subject}', [App\Http\Controllers\Developer\SubjectController::class, 'show'])->name('subjects.show');
 
         // Material Management
@@ -79,7 +91,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('workspace/{review}', [App\Http\Controllers\Developer\ReviewWorkspaceController::class, 'show'])->name('workspace.show');
         Route::post('workspace/{review}/comments/{comment}/reply', [App\Http\Controllers\Developer\ReviewWorkspaceController::class, 'reply'])->name('workspace.comments.reply');
         Route::patch('workspace/{review}/comments/{comment}/toggle', [App\Http\Controllers\Developer\ReviewWorkspaceController::class, 'toggleStatus'])->name('workspace.comments.toggle');
+        Route::post('workspace/{review}/ai-analyze', [App\Http\Controllers\AiAnalysisController::class, 'analyze'])->name('workspace.ai-analyze');
     });
+
+    // General Review AI Analysis Route
+    Route::post('reviews/{review}/ai-analyze', [App\Http\Controllers\AiAnalysisController::class, 'analyze'])->name('reviews.ai-analyze');
 
     // Viewer Route
     Route::get('/viewer/{version}', [App\Http\Controllers\ViewerController::class, 'show'])->name('viewer.show');

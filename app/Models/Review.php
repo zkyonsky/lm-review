@@ -18,6 +18,7 @@ use Illuminate\Support\Carbon;
  * @property int $reviewer_id
  * @property-read int $user_id
  * @property ReviewStatus $status
+ * @property \App\Enums\ReviewConclusion|null $conclusion
  * @property string|null $general_notes
  * @property Carbon|null $submitted_at
  * @property-read ReviewAssignment $assignment
@@ -25,7 +26,7 @@ use Illuminate\Support\Carbon;
  * @property-read User $reviewer
  * @property-read User $user
  */
-#[Fillable(['review_assignment_id', 'material_version_id', 'reviewer_id', 'status', 'general_notes', 'submitted_at'])]
+#[Fillable(['review_assignment_id', 'material_version_id', 'reviewer_id', 'status', 'conclusion', 'general_notes', 'submitted_at'])]
 class Review extends Model
 {
     use HasFactory;
@@ -36,6 +37,7 @@ class Review extends Model
     {
         return [
             'status' => ReviewStatus::class,
+            'conclusion' => \App\Enums\ReviewConclusion::class,
             'submitted_at' => 'datetime',
         ];
     }
@@ -78,5 +80,16 @@ class Review extends Model
     public function isSubmitted(): bool
     {
         return $this->status === ReviewStatus::Submitted;
+    }
+
+    /**
+     * Scope a query to only include reviews whose material, subject, and training are not deleted.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<Review>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<Review>
+     */
+    public function scopeWhereHasTraining(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->whereHas('materialVersion.material.subject.training');
     }
 }

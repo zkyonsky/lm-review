@@ -10,6 +10,7 @@ import type { SharedData } from '@/types';
 type Review = {
     id: number;
     status: string;
+    general_notes?: string | null;
     user?: {
         id: number;
         name: string;
@@ -21,6 +22,7 @@ type Version = {
     version_number: number;
     file_path: string | null;
     google_drive_id: string | null;
+    changelog?: string | null;
     is_active: boolean;
     created_at: string;
     reviews: Review[];
@@ -29,7 +31,6 @@ type Version = {
 type Material = {
     id: number;
     title: string;
-    description: string | null;
     type: string;
     order: number;
     subject: {
@@ -57,7 +58,7 @@ export default function Show({ material }: { material: Material }) {
 
     return (
         <>
-            <Head title={`Materi: ${material.title}`} />
+            <Head title={`Materi ${material.type?.toUpperCase()} #${material.order ?? material.id}`} />
             <div className="flex flex-col gap-6 p-6">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -68,15 +69,12 @@ export default function Show({ material }: { material: Material }) {
                         </Button>
                         <div>
                             <p className="text-sm text-primary font-medium mb-1">
-                                {material.subject.training.title} &raquo; {material.subject.title}
+                                {material.subject?.training?.title ? `${material.subject.training.title} » ` : ''}{material.subject?.title ?? '-'}
                             </p>
                             <div className="flex items-center gap-2">
-                                <h1 className="text-2xl font-semibold text-foreground">{material.title}</h1>
+                                <h1 className="text-2xl font-semibold text-foreground">Materi #{material.order ?? material.id}</h1>
                                 <Badge variant="outline">{material.type.toUpperCase()}</Badge>
                             </div>
-                            <p className="text-sm text-muted-foreground mt-1">
-                                {material.description || 'Tidak ada deskripsi.'}
-                            </p>
                         </div>
                     </div>
                 </div>
@@ -117,41 +115,55 @@ export default function Show({ material }: { material: Material }) {
                                 ) : (
                                     material.versions.map((version) => (
                                         <tr key={version.id} className="hover:bg-muted/50 transition-colors">
-                                            <td className="p-4 font-semibold">v{version.version_number}</td>
-                                            <td className="p-4">
+                                            <td className="p-4 align-top">
+                                                <div className="font-semibold text-foreground">v{version.version_number}</div>
+                                                {version.changelog && (
+                                                    <div className="mt-1 text-xs text-muted-foreground bg-muted/60 p-1.5 rounded max-w-xs border border-border">
+                                                        <span className="font-medium text-foreground">Catatan Pemutakhiran:</span> {version.changelog}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="p-4 align-top">
                                                 {version.google_drive_id ? (
-                                                    <span className="flex items-center text-muted-foreground">
-                                                        <LinkIcon className="h-4 w-4 mr-2 text-blue-500" /> Google Drive
+                                                    <span className="flex items-center text-muted-foreground text-xs">
+                                                        <LinkIcon className="h-4 w-4 mr-1.5 text-blue-500" /> Google Drive
                                                     </span>
                                                 ) : version.file_path ? (
-                                                    <span className="flex items-center text-muted-foreground">
-                                                        <FileDown className="h-4 w-4 mr-2 text-emerald-500" /> File Upload
+                                                    <span className="flex items-center text-muted-foreground text-xs">
+                                                        <FileDown className="h-4 w-4 mr-1.5 text-emerald-500" /> File Upload
                                                     </span>
                                                 ) : (
                                                     '-'
                                                 )}
                                             </td>
-                                            <td className="p-4">
+                                            <td className="p-4 align-top">
                                                 {version.is_active ? (
-                                                    <Badge className="bg-green-600 hover:bg-green-700">Aktif</Badge>
+                                                    <Badge className="bg-green-600 hover:bg-green-700 text-xs">Aktif</Badge>
                                                 ) : (
-                                                    <Badge variant="secondary">Arsip</Badge>
+                                                    <Badge variant="secondary" className="text-xs">Arsip</Badge>
                                                 )}
                                             </td>
-                                            <td className="p-4">
+                                            <td className="p-4 align-top">
                                                 {version.reviews && version.reviews.length > 0 ? (
                                                     <div className="flex flex-col gap-1.5">
                                                         {version.reviews.map((rev) => (
-                                                            <div key={rev.id} className="flex items-center gap-1.5 text-xs">
-                                                                <span className="font-medium">{rev.user?.name || 'Reviewer'}:</span>
-                                                                {rev.status === 'submitted' ? (
-                                                                    <Badge className="bg-green-600 text-[10px] flex items-center gap-1 py-0 h-4">
-                                                                        <CheckCircle className="h-2.5 w-2.5" /> Selesai
-                                                                    </Badge>
-                                                                ) : (
-                                                                    <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300 flex items-center gap-1 py-0 h-4">
-                                                                        <Clock className="h-2.5 w-2.5" /> Draft
-                                                                    </Badge>
+                                                            <div key={rev.id} className="flex flex-col gap-0.5 text-xs bg-muted/30 p-1.5 rounded border border-border/60">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="font-medium">{rev.user?.name || 'Reviewer'}:</span>
+                                                                    {rev.status === 'submitted' ? (
+                                                                        <Badge className="bg-green-600 text-[10px] flex items-center gap-1 py-0 h-4">
+                                                                            <CheckCircle className="h-2.5 w-2.5" /> Selesai
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300 flex items-center gap-1 py-0 h-4">
+                                                                            <Clock className="h-2.5 w-2.5" /> Draft
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                                {rev.general_notes && (
+                                                                    <p className="text-[11px] text-muted-foreground italic line-clamp-2">
+                                                                        &quot;{rev.general_notes}&quot;
+                                                                    </p>
                                                                 )}
                                                             </div>
                                                         ))}

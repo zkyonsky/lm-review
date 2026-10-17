@@ -14,15 +14,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * @property int $id
  * @property int $training_id
- * @property string|null $code
  * @property string $title
- * @property string|null $description
- * @property int|null $jp
  * @property int $sort_order
  * @property-read int $order
  * @property-read Training $training
  */
-#[Fillable(['training_id', 'code', 'title', 'description', 'jp', 'sort_order'])]
+#[Fillable(['training_id', 'title', 'sort_order'])]
 class Subject extends Model
 {
     use HasFactory, SoftDeletes;
@@ -32,6 +29,27 @@ class Subject extends Model
     protected function order(): Attribute
     {
         return Attribute::get(fn () => $this->sort_order);
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Subject $subject) {
+            if ($subject->isForceDeleting()) {
+                foreach ($subject->materials()->withTrashed()->get() as $material) {
+                    $material->forceDelete();
+                }
+            } else {
+                foreach ($subject->materials as $material) {
+                    $material->delete();
+                }
+            }
+        });
+
+        static::restoring(function (Subject $subject) {
+            foreach ($subject->materials()->withTrashed()->get() as $material) {
+                $material->restore();
+            }
+        });
     }
 
     /** @return BelongsTo<Training, $this> */

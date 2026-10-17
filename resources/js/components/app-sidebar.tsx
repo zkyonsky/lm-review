@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, LayoutGrid, ShieldCheck, Users } from 'lucide-react';
+import { BookOpen, CalendarRange, LayoutGrid, ShieldCheck, Users } from 'lucide-react';
 import type { SharedData } from '@/types';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
@@ -35,9 +35,14 @@ export function AppSidebar() {
     const navItems = [...mainNavItems];
     if (isAdmin) {
         navItems.push({
-            title: 'Manajemen Pelatihan',
+            title: 'Master Pelatihan',
             href: '/admin/trainings',
             icon: BookOpen,
+        });
+        navItems.push({
+            title: 'Periode Reviu',
+            href: '/admin/periods',
+            icon: CalendarRange,
         });
     }
     

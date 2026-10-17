@@ -234,11 +234,16 @@ class WhatsAppService
             ? route('reviewer.workspace.show', $review->id)
             : route('reviewer.reviews.index');
 
+        $changelogNote = !empty($version->changelog)
+            ? "\n📝 *Catatan Pemutakhiran:*\n{$version->changelog}\n"
+            : "";
+
         $message = "Halo *{$user->name}*,\n\n"
             . "Pemberitahuan Versi Materi Baru:\n"
             . "📖 Materi: *{$material?->title}*\n"
             . "🔖 Versi: *{$version->version_number}*\n"
-            . "📚 Mata Pelatihan: *{$subject?->title}*\n\n"
+            . "📚 Mata Pelatihan: *{$subject?->title}*\n"
+            . $changelogNote . "\n"
             . "Versi terbaru materi telah diunggah dan siap untuk direviu kembali. Silakan akses workspace reviu:\n"
             . "🔗 {$url}\n\n"
             . "Terima kasih.";

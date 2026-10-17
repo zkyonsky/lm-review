@@ -15,6 +15,10 @@ class MaterialController extends Controller
 {
     protected function checkSubjectAccess(Subject $subject): void
     {
+        if (!$subject->training) {
+            abort(404, 'Pelatihan tidak ditemukan atau telah dihapus.');
+        }
+
         $user = auth()->user();
         $isAssigned = $subject->developers()->where('users.id', $user->id)->exists();
         if (!$isAssigned && !$user->hasRole('admin')) {
@@ -41,9 +45,7 @@ class MaterialController extends Controller
         $this->checkSubjectAccess($subject);
 
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
             'type' => ['required', new Enum(MaterialType::class)],
-            'description' => 'nullable|string',
             'order' => 'nullable|integer|min:0',
         ]);
 
@@ -51,9 +53,7 @@ class MaterialController extends Controller
         $nextOrder = max($maxOrder, $subject->materials()->count()) + 1;
 
         $subject->materials()->create([
-            'title' => $validated['title'],
             'type' => $validated['type'],
-            'description' => $validated['description'] ?? null,
             'sort_order' => $validated['order'] ?? $nextOrder,
             'created_by' => auth()->id(),
         ]);
@@ -114,16 +114,12 @@ class MaterialController extends Controller
         $this->checkSubjectAccess($material->subject);
 
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
             'type' => ['required', new Enum(MaterialType::class)],
-            'description' => 'nullable|string',
             'order' => 'nullable|integer|min:0',
         ]);
 
         $material->update([
-            'title' => $validated['title'],
             'type' => $validated['type'],
-            'description' => $validated['description'] ?? null,
             'sort_order' => $validated['order'] ?? $material->sort_order,
         ]);
 
