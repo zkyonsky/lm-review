@@ -16,16 +16,17 @@ class SubjectController extends Controller
         $periodId = $request->filled('period_id') ? (int) $request->input('period_id') : null;
 
         $query = $user->developerSubjects()
-            ->whereHas('training')
+            ->whereHas('training.periods', function ($p) use ($periodId) {
+                $p->active();
+                if ($periodId) {
+                    $p->where('review_periods.id', $periodId);
+                }
+            })
             ->with(['training', 'reviewers:id,name,email,unit_kerja', 'materials.versions'])
             ->withCount([
                 'materials',
                 'materials as reviewed_materials_count' => fn ($q) => $q->reviewed($periodId),
             ]);
-
-        if ($periodId) {
-            $query->whereHas('training.periods', fn ($p) => $p->where('review_periods.id', $periodId));
-        }
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -75,7 +76,8 @@ class SubjectController extends Controller
 
         $subjects = $query->latest('subjects.id')->paginate(10)->withQueryString();
 
-        $periods = \App\Models\ReviewPeriod::select('id', 'name', 'year', 'status')
+        $periods = \App\Models\ReviewPeriod::active()
+            ->select('id', 'name', 'year', 'status')
             ->latest('year')
             ->latest('id')
             ->get();
@@ -117,7 +119,7 @@ class SubjectController extends Controller
             }
             $trainingIds = $trainingQuery->pluck('id')->all();
         } else {
-            $query = $user->developerSubjects()->whereHas('training');
+            $query = $user->developerSubjects()->whereHas('training.periods', fn ($p) => $p->active());
 
             if ($request->filled('subject_ids')) {
                 $query->whereIn('subjects.id', $request->input('subject_ids'));
@@ -157,6 +159,10 @@ class SubjectController extends Controller
         $isAssigned = $subject->developers()->where('users.id', $user->id)->exists();
         if (!$isAssigned && !$user->hasRole('admin')) {
             abort(403, 'Anda tidak ditugaskan pada mata pelatihan ini.');
+        }
+
+        if (!$subject->training->periods()->active()->exists() && !$user->hasRole('admin')) {
+            return redirect()->route('developer.subjects.index')->with('error', 'Pelatihan saat ini tidak berada pada periode reviu yang aktif.');
         }
 
         $subject->load([

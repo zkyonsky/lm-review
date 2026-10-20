@@ -50,10 +50,18 @@ class AiAnalysisTest extends TestCase
         $this->otherUser = User::factory()->create(['name' => 'Orang Lain']);
         $this->otherUser->assignRole('reviewer');
 
+        $period = \App\Models\ReviewPeriod::create([
+            'name' => 'Periode Aktif 2026',
+            'year' => 2026,
+            'status' => \App\Enums\ReviewPeriodStatus::Active,
+            'created_by' => $this->admin->id,
+        ]);
+
         $this->training = Training::create([
             'title' => 'Pelatihan Pengadaan Barang dan Jasa Pemerintah',
             'created_by' => $this->admin->id,
         ]);
+        $this->training->periods()->attach($period->id);
 
         $this->subject = Subject::create([
             'training_id' => $this->training->id,

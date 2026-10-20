@@ -31,11 +31,19 @@ class ReviewTest extends TestCase
         $this->reviewer = User::factory()->create(['name' => 'Reviewer 1']);
         $this->reviewer->assignRole('reviewer');
 
+        $period = \App\Models\ReviewPeriod::create([
+            'name' => 'Periode Aktif 2026',
+            'year' => 2026,
+            'status' => \App\Enums\ReviewPeriodStatus::Active,
+            'created_by' => $admin->id,
+        ]);
+
         $training = Training::create([
             'code' => 'TR-01',
             'title' => 'E-Learning APIPDA',
             'created_by' => $admin->id,
         ]);
+        $training->periods()->attach($period->id);
 
         $this->subject = Subject::create([
             'training_id' => $training->id,
@@ -288,6 +296,7 @@ class ReviewTest extends TestCase
             'status' => \App\Enums\ReviewPeriodStatus::Active->value,
             'created_by' => $admin->id,
         ]);
+        $this->subject->training->periods()->syncWithoutDetaching([$period2->id]);
 
         $assign2 = \App\Models\ReviewAssignment::create([
             'material_id' => $material->id,
@@ -317,5 +326,69 @@ class ReviewTest extends TestCase
             ->where('previousReviews.0.general_notes', 'Catatan evaluasi kurikulum 2025: materi sudah lengkap dan relevan.')
             ->has('previousReviews.0.comments', 1)
         );
+    }
+
+    public function test_reviewer_only_sees_materials_from_trainings_in_active_period()
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $closedPeriod = \App\Models\ReviewPeriod::create([
+            'name' => 'Periode Ditutup 2025',
+            'year' => 2025,
+            'status' => \App\Enums\ReviewPeriodStatus::Closed,
+            'created_by' => $admin->id,
+        ]);
+
+        $closedTraining = Training::create([
+            'title' => 'Pelatihan Closed Period',
+            'created_by' => $admin->id,
+        ]);
+        $closedTraining->periods()->attach($closedPeriod->id);
+
+        $closedSubject = Subject::create([
+            'training_id' => $closedTraining->id,
+            'title' => 'Mata Pelatihan Closed',
+            'sort_order' => 1,
+        ]);
+
+        $closedMat = $closedSubject->materials()->create([
+            'type' => 'pdf',
+            'created_by' => $admin->id,
+        ]);
+        $closedVer = $closedMat->versions()->create([
+            'version_number' => 1,
+            'created_by' => $admin->id,
+        ]);
+        $closedMat->update(['current_version_id' => $closedVer->id]);
+
+        $closedAssign = \App\Models\ReviewAssignment::create([
+            'material_id' => $closedMat->id,
+            'reviewer_id' => $this->reviewer->id,
+            'review_period_id' => $closedPeriod->id,
+            'assigned_by' => $admin->id,
+            'status' => \App\Enums\AssignmentStatus::Pending,
+        ]);
+
+        $closedReview = Review::create([
+            'material_version_id' => $closedVer->id,
+            'reviewer_id' => $this->reviewer->id,
+            'review_assignment_id' => $closedAssign->id,
+            'status' => \App\Enums\ReviewStatus::Draft,
+        ]);
+
+        // Access reviews index: only materials from active period training should be shown
+        $response = $this->actingAs($this->reviewer)->get(route('reviewer.reviews.index'));
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('reviewer/reviews/index')
+            ->has('reviews.data', 1)
+            ->where('reviews.data.0.material_version.material.subject.training.title', 'E-Learning APIPDA')
+        );
+
+        // Trying to access workspace of review in closed period should redirect with error
+        $wsResponse = $this->actingAs($this->reviewer)->get(route('reviewer.workspace.show', $closedReview));
+        $wsResponse->assertRedirect(route('reviewer.reviews.index'));
+        $wsResponse->assertSessionHas('error');
     }
 }

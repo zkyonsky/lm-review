@@ -76,6 +76,11 @@ class Training extends Model
             ->withTimestamps();
     }
 
+    public function scopeInActivePeriod(\Illuminate\Database\Eloquent\Builder $query): void
+    {
+        $query->whereHas('periods', fn ($q) => $q->where('status', \App\Enums\ReviewPeriodStatus::Active));
+    }
+
     public function getReviewStatus(?int $periodId = null): string
     {
         $total = $this->materials_count ?? $this->materials()->count();

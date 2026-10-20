@@ -98,4 +98,24 @@ class Review extends Model
     {
         return $query->whereHas('materialVersion.material.subject.training');
     }
+
+    /**
+     * Scope a query to only include reviews on trainings in an active review period.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<Review>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<Review>
+     */
+    public function scopeInActivePeriod(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where(function ($sub) {
+            $sub->whereHas('materialVersion.material.subject.training.periods', fn ($q) => $q->where('status', \App\Enums\ReviewPeriodStatus::Active))
+                ->orWhereHas('assignment.period', fn ($q) => $q->where('status', \App\Enums\ReviewPeriodStatus::Active));
+        });
+    }
+
+    public function isInActivePeriod(): bool
+    {
+        return ($this->assignment?->period?->isActive() ?? false)
+            || ($this->materialVersion?->material?->subject?->training?->periods()->active()->exists() ?? false);
+    }
 }

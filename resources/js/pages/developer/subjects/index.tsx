@@ -186,7 +186,7 @@ export default function Index({
                     <div>
                         <h1 className="text-2xl font-semibold text-foreground">Mata Pelatihan Saya</h1>
                         <p className="text-sm text-muted-foreground mt-1">
-                            Daftar mata pelatihan yang ditugaskan kepada Anda untuk pengembangan materi dan konten pembelajaran.
+                            Daftar mata pelatihan pada periode reviu aktif yang ditugaskan kepada Anda untuk pengembangan materi dan konten pembelajaran.
                         </p>
                     </div>
                 </div>
@@ -223,7 +223,7 @@ export default function Index({
                                 aria-label="Filter periode reviu"
                                 className="h-10 min-w-[190px] rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                             >
-                                <option value="">Semua Periode</option>
+                                <option value="">Semua Periode Aktif</option>
                                 {periods.map((p) => (
                                     <option key={p.id} value={p.id}>
                                         {p.name} ({p.year})
@@ -303,12 +303,12 @@ export default function Index({
                                                 <div className="text-base font-medium text-foreground">
                                                     {hasActiveFilter
                                                         ? 'Tidak ada mata pelatihan yang cocok dengan filter pencarian.'
-                                                        : 'Belum Ada Penugasan Mata Pelatihan'}
+                                                        : 'Belum Ada Mata Pelatihan pada Periode Aktif'}
                                                 </div>
                                                 <p className="text-xs text-muted-foreground max-w-sm">
                                                     {hasActiveFilter
-                                                        ? 'Coba gunakan kata kunci pencarian lain atau reset filter status.'
-                                                        : 'Administrator belum menugaskan Anda ke mata pelatihan manapun.'}
+                                                        ? 'Coba gunakan kata kunci pencarian lain atau reset filter.'
+                                                        : 'Belum ada mata pelatihan pada pelatihan yang berada dalam periode reviu aktif.'}
                                                 </p>
                                             </div>
                                         </td>

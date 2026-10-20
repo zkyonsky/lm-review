@@ -70,11 +70,20 @@ class DashboardTest extends TestCase
         $reviewer->assignRole('reviewer');
 
         // Training 1: Active training with 1 pending task and 1 completed task
+        $period = \App\Models\ReviewPeriod::create([
+            'name' => 'Periode Aktif 2026',
+            'year' => 2026,
+            'status' => \App\Enums\ReviewPeriodStatus::Active,
+            'created_by' => $admin->id,
+        ]);
+
         $activeTraining = Training::create([
             'code' => 'TRN-ACTIVE',
             'title' => 'Pelatihan Aktif',
             'created_by' => $admin->id,
         ]);
+        $activeTraining->periods()->attach($period->id);
+
         $activeSubject = Subject::create([
             'training_id' => $activeTraining->id,
             'title' => 'Mata Pelatihan Aktif',
@@ -177,6 +186,171 @@ class DashboardTest extends TestCase
             ->component('dashboard')
             ->where('stats.reviewer.pending_tasks', 1)
             ->where('stats.reviewer.completed_tasks', 1)
+        );
+    }
+
+    public function test_reviewer_dashboard_only_counts_trainings_in_active_period()
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $reviewer = User::factory()->create();
+        $reviewer->assignRole('reviewer');
+
+        $closedPeriod = \App\Models\ReviewPeriod::create([
+            'name' => 'Periode Ditutup',
+            'year' => 2025,
+            'status' => \App\Enums\ReviewPeriodStatus::Closed,
+            'created_by' => $admin->id,
+        ]);
+
+        $closedTraining = Training::create([
+            'title' => 'Pelatihan Periode Lama',
+            'created_by' => $admin->id,
+        ]);
+        $closedTraining->periods()->attach($closedPeriod->id);
+
+        $closedSubject = Subject::create([
+            'training_id' => $closedTraining->id,
+            'title' => 'Mata Pelatihan Periode Lama',
+            'sort_order' => 1,
+        ]);
+
+        $closedMat = Material::create([
+            'subject_id' => $closedSubject->id,
+            'type' => 'pdf',
+            'created_by' => $admin->id,
+            'status' => MaterialStatus::InReview,
+        ]);
+        $closedVer = $closedMat->versions()->create([
+            'version_number' => 1,
+            'created_by' => $admin->id,
+        ]);
+        $closedMat->update(['current_version_id' => $closedVer->id]);
+        $closedAssign = ReviewAssignment::create([
+            'review_period_id' => $closedPeriod->id,
+            'material_id' => $closedMat->id,
+            'reviewer_id' => $reviewer->id,
+            'assigned_by' => $admin->id,
+            'status' => AssignmentStatus::Pending,
+        ]);
+        Review::create([
+            'material_version_id' => $closedVer->id,
+            'reviewer_id' => $reviewer->id,
+            'review_assignment_id' => $closedAssign->id,
+            'status' => ReviewStatus::Draft,
+        ]);
+
+        // Reviewer visits dashboard - closed period tasks should NOT be counted
+        $response = $this->actingAs($reviewer)->get(route('dashboard'));
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('dashboard')
+            ->where('stats.reviewer.pending_tasks', 0)
+            ->where('stats.reviewer.completed_tasks', 0)
+        );
+    }
+
+    public function test_developer_dashboard_only_counts_trainings_in_active_period()
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $developer = User::factory()->create();
+        $developer->assignRole('pengembang');
+
+        $activePeriod = \App\Models\ReviewPeriod::create([
+            'name' => 'Periode Aktif 2026',
+            'year' => 2026,
+            'status' => \App\Enums\ReviewPeriodStatus::Active,
+            'created_by' => $admin->id,
+        ]);
+
+        $closedPeriod = \App\Models\ReviewPeriod::create([
+            'name' => 'Periode Ditutup 2025',
+            'year' => 2025,
+            'status' => \App\Enums\ReviewPeriodStatus::Closed,
+            'created_by' => $admin->id,
+        ]);
+
+        // Training in active period
+        $activeTraining = Training::create([
+            'title' => 'Pelatihan Aktif',
+            'created_by' => $admin->id,
+        ]);
+        $activeTraining->periods()->attach($activePeriod->id);
+        $activeSubject = Subject::create([
+            'training_id' => $activeTraining->id,
+            'title' => 'Mata Pelatihan Aktif',
+            'sort_order' => 1,
+        ]);
+        $activeSubject->assignedUsers()->attach($developer->id, [
+            'role' => 'pengembang',
+            'assigned_by' => $admin->id,
+        ]);
+        $mat1 = Material::create([
+            'subject_id' => $activeSubject->id,
+            'type' => 'pdf',
+            'created_by' => $admin->id,
+            'status' => MaterialStatus::Reviewed,
+        ]);
+        $mat2 = Material::create([
+            'subject_id' => $activeSubject->id,
+            'type' => 'video',
+            'created_by' => $admin->id,
+            'status' => MaterialStatus::InReview,
+        ]);
+
+        // Training in closed period
+        $closedTraining = Training::create([
+            'title' => 'Pelatihan Closed',
+            'created_by' => $admin->id,
+        ]);
+        $closedTraining->periods()->attach($closedPeriod->id);
+        $closedSubject = Subject::create([
+            'training_id' => $closedTraining->id,
+            'title' => 'Mata Pelatihan Closed',
+            'sort_order' => 1,
+        ]);
+        $closedSubject->assignedUsers()->attach($developer->id, [
+            'role' => 'pengembang',
+            'assigned_by' => $admin->id,
+        ]);
+        Material::create([
+            'subject_id' => $closedSubject->id,
+            'type' => 'pdf',
+            'created_by' => $admin->id,
+            'status' => MaterialStatus::Reviewed,
+        ]);
+
+        // Training without any period
+        $noPeriodTraining = Training::create([
+            'title' => 'Pelatihan Tanpa Periode',
+            'created_by' => $admin->id,
+        ]);
+        $noPeriodSubject = Subject::create([
+            'training_id' => $noPeriodTraining->id,
+            'title' => 'Mata Pelatihan Tanpa Periode',
+            'sort_order' => 1,
+        ]);
+        $noPeriodSubject->assignedUsers()->attach($developer->id, [
+            'role' => 'pengembang',
+            'assigned_by' => $admin->id,
+        ]);
+        Material::create([
+            'subject_id' => $noPeriodSubject->id,
+            'type' => 'pdf',
+            'created_by' => $admin->id,
+            'status' => MaterialStatus::Draft,
+        ]);
+
+        $response = $this->actingAs($developer)->get(route('dashboard'));
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('dashboard')
+            ->where('stats.developer.total_subjects', 1)
+            ->where('stats.developer.total_materials', 2)
+            ->where('stats.developer.reviewed_materials', 1)
         );
     }
 }

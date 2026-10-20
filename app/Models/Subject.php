@@ -89,4 +89,14 @@ class Subject extends Model
             ->withPivot(['id', 'role', 'assigned_by'])
             ->withTimestamps();
     }
+
+    /**
+     * Scope query untuk mata pelatihan pada pelatihan yang berada di periode reviu aktif.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<Subject>  $query
+     */
+    public function scopeInActivePeriod(\Illuminate\Database\Eloquent\Builder $query): void
+    {
+        $query->whereHas('training.periods', fn ($q) => $q->where('status', \App\Enums\ReviewPeriodStatus::Active));
+    }
 }

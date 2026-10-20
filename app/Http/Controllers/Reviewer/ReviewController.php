@@ -20,7 +20,8 @@ class ReviewController extends Controller
     public function index()
     {
         $reviews = Review::where('reviewer_id', auth()->id())
-            ->whereHas('materialVersion.material.subject.training')
+            ->whereHasTraining()
+            ->inActivePeriod()
             ->with(['materialVersion.material.subject.training'])
             ->latest()
             ->paginate(10);
@@ -48,6 +49,10 @@ class ReviewController extends Controller
 
         if (!$review->materialVersion?->material?->subject?->training) {
             return redirect()->route('reviewer.reviews.index')->with('error', 'Pelatihan terkait telah dihapus atau tidak ditemukan.');
+        }
+
+        if (!$review->isInActivePeriod()) {
+            return redirect()->route('reviewer.reviews.index')->with('error', 'Pelatihan saat ini tidak berada pada periode reviu yang aktif.');
         }
 
         $material = $review->materialVersion->material;
@@ -84,6 +89,10 @@ class ReviewController extends Controller
     {
         if ($review->reviewer_id !== auth()->id()) {
             abort(403);
+        }
+
+        if (!$review->isInActivePeriod()) {
+            return back()->with('error', 'Pelatihan saat ini tidak berada pada periode reviu yang aktif.');
         }
 
         $validated = $request->validate([
@@ -132,6 +141,10 @@ class ReviewController extends Controller
     {
         if ($review->reviewer_id !== auth()->id()) {
             abort(403);
+        }
+
+        if (!$review->isInActivePeriod()) {
+            return back()->with('error', 'Pelatihan saat ini tidak berada pada periode reviu yang aktif.');
         }
 
         $validated = $request->validate([

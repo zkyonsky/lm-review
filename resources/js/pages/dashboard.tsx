@@ -22,6 +22,7 @@ type Stats = {
     developer?: {
         total_subjects: number;
         total_materials: number;
+        reviewed_materials?: number;
     };
     reviewer?: {
         pending_tasks: number;
@@ -79,7 +80,7 @@ export default function Dashboard({ stats }: { stats: Stats }) {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold">{stats.developer.total_subjects}</div>
-                                    <p className="text-xs text-muted-foreground">Mata pelatihan diampu</p>
+                                    <p className="text-xs text-muted-foreground">Mata pelatihan diampu (periode aktif)</p>
                                 </CardContent>
                             </Card>
                             <Card>
@@ -89,9 +90,28 @@ export default function Dashboard({ stats }: { stats: Stats }) {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold">{stats.developer.total_materials}</div>
-                                    <p className="text-xs text-muted-foreground">Materi pelatihan</p>
+                                    <p className="text-xs text-muted-foreground">Materi pelatihan (periode aktif)</p>
                                 </CardContent>
                             </Card>
+                            {typeof stats.developer.reviewed_materials === 'number' && (
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium">Status Reviu Materi</CardTitle>
+                                        <CheckCircle className="h-4 w-4 text-emerald-500" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold">
+                                            {stats.developer.reviewed_materials}{' '}
+                                            <span className="text-sm font-normal text-muted-foreground">
+                                                / {stats.developer.total_materials} Selesai
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">
+                                            {Math.max(0, stats.developer.total_materials - stats.developer.reviewed_materials)} materi belum/sedang direviu
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            )}
                         </>
                     )}
 
@@ -104,7 +124,7 @@ export default function Dashboard({ stats }: { stats: Stats }) {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold">{stats.reviewer.pending_tasks}</div>
-                                    <p className="text-xs text-muted-foreground">Materi perlu diulas</p>
+                                    <p className="text-xs text-muted-foreground">Materi perlu diulas (periode aktif)</p>
                                 </CardContent>
                             </Card>
                             <Card>
@@ -114,7 +134,7 @@ export default function Dashboard({ stats }: { stats: Stats }) {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold">{stats.reviewer.completed_tasks}</div>
-                                    <p className="text-xs text-muted-foreground">Materi telah diulas</p>
+                                    <p className="text-xs text-muted-foreground">Materi telah diulas (periode aktif)</p>
                                 </CardContent>
                             </Card>
                         </>

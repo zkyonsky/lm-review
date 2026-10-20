@@ -31,25 +31,33 @@ class DashboardController extends Controller
 
         if ($user->hasAnyRole(['developer', 'pengembang'])) {
             $assignedSubjectIds = $user->developerSubjects()
-                ->whereHas('training')
+                ->inActivePeriod()
                 ->pluck('subjects.id');
+
+            $materialsQuery = Material::whereIn('subject_id', $assignedSubjectIds)
+                ->inActivePeriod();
+
+            $totalMaterials = (clone $materialsQuery)->count();
+            $reviewedMaterials = (clone $materialsQuery)->reviewed()->count();
+
             $stats['developer'] = [
                 'total_subjects' => $assignedSubjectIds->count(),
-                'total_materials' => Material::whereIn('subject_id', $assignedSubjectIds)
-                    ->whereHas('subject.training')
-                    ->count(),
+                'total_materials' => $totalMaterials,
+                'reviewed_materials' => $reviewedMaterials,
             ];
         }
 
         if ($isReviewer) {
+            $reviewerReviewsQuery = Review::where('reviewer_id', $user->id)
+                ->whereHasTraining()
+                ->inActivePeriod();
+
             $stats['reviewer'] = [
-                'pending_tasks' => Review::where('reviewer_id', $user->id)
+                'pending_tasks' => (clone $reviewerReviewsQuery)
                     ->where('status', 'draft')
-                    ->whereHasTraining()
                     ->count(),
-                'completed_tasks' => Review::where('reviewer_id', $user->id)
+                'completed_tasks' => (clone $reviewerReviewsQuery)
                     ->where('status', 'submitted')
-                    ->whereHasTraining()
                     ->count(),
             ];
         }

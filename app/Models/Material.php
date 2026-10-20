@@ -144,4 +144,14 @@ class Material extends Model
             }
         });
     }
+
+    /**
+     * Scope query untuk materi pada pelatihan yang berada di periode reviu aktif.
+     *
+     * @param  Builder<Material>  $query
+     */
+    public function scopeInActivePeriod(Builder $query): void
+    {
+        $query->whereHas('subject.training.periods', fn ($q) => $q->where('status', \App\Enums\ReviewPeriodStatus::Active));
+    }
 }

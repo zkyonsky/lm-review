@@ -39,11 +39,19 @@ class SubjectTest extends TestCase
         $this->reviewer = User::factory()->create(['name' => 'Reviewer 1']);
         $this->reviewer->assignRole('reviewer');
 
+        $period = \App\Models\ReviewPeriod::create([
+            'name' => 'Periode Aktif 2026',
+            'year' => 2026,
+            'status' => \App\Enums\ReviewPeriodStatus::Active,
+            'created_by' => $admin->id,
+        ]);
+
         $training = Training::create([
             'code' => 'TR-01',
             'title' => 'Pelatihan APIPDA',
             'created_by' => $admin->id,
         ]);
+        $training->periods()->attach($period->id);
 
         $this->assignedSubject = Subject::create([
             'training_id' => $training->id,
@@ -179,10 +187,12 @@ class SubjectTest extends TestCase
     public function test_developer_subjects_index_has_pagination(): void
     {
         $admin = User::role('admin')->first();
+        $activePeriod = \App\Models\ReviewPeriod::where('status', \App\Enums\ReviewPeriodStatus::Active)->first();
         $training = Training::create([
             'title' => 'Pelatihan Tambahan',
             'created_by' => $admin->id,
         ]);
+        $training->periods()->attach($activePeriod->id);
 
         for ($i = 1; $i <= 14; $i++) {
             $subj = Subject::create([
@@ -210,10 +220,13 @@ class SubjectTest extends TestCase
     public function test_developer_can_filter_subjects_by_search_or_training_name(): void
     {
         $admin = User::role('admin')->first();
+        $activePeriod = \App\Models\ReviewPeriod::where('status', \App\Enums\ReviewPeriodStatus::Active)->first();
+
         $training2 = Training::create([
             'title' => 'Pelatihan Kepemimpinan Pengawas',
             'created_by' => $admin->id,
         ]);
+        $training2->periods()->attach($activePeriod->id);
 
         $subj2 = Subject::create([
             'training_id' => $training2->id,
@@ -253,11 +266,14 @@ class SubjectTest extends TestCase
     public function test_developer_can_filter_subjects_by_review_status(): void
     {
         $admin = User::role('admin')->first();
+        $activePeriod = \App\Models\ReviewPeriod::where('status', \App\Enums\ReviewPeriodStatus::Active)->first();
+
         $trainingDone = Training::create([
             'title' => 'Pelatihan Selesai',
             'status' => 'Selesai Review',
             'created_by' => $admin->id,
         ]);
+        $trainingDone->periods()->attach($activePeriod->id);
 
         $subjDone = Subject::create([
             'training_id' => $trainingDone->id,
@@ -366,5 +382,62 @@ class SubjectTest extends TestCase
             ->where('subjects.data.0.materials_count', 2)
             ->where('subjects.data.0.reviewed_materials_count', 1)
         );
+    }
+
+    public function test_developer_only_sees_subjects_from_trainings_in_active_period(): void
+    {
+        $admin = User::role('admin')->first();
+
+        $closedPeriod = \App\Models\ReviewPeriod::create([
+            'name' => 'Periode Ditutup 2025',
+            'year' => 2025,
+            'status' => \App\Enums\ReviewPeriodStatus::Closed,
+            'created_by' => $admin->id,
+        ]);
+
+        $closedTraining = Training::create([
+            'title' => 'Pelatihan Closed Period',
+            'created_by' => $admin->id,
+        ]);
+        $closedTraining->periods()->attach($closedPeriod->id);
+
+        $closedSubject = Subject::create([
+            'training_id' => $closedTraining->id,
+            'title' => 'Mata Pelatihan Closed',
+            'sort_order' => 1,
+        ]);
+        $closedSubject->assignedUsers()->attach($this->developer->id, [
+            'role' => 'pengembang',
+            'assigned_by' => $admin->id,
+        ]);
+
+        // Training without period
+        $noPeriodTraining = Training::create([
+            'title' => 'Pelatihan Tanpa Periode',
+            'created_by' => $admin->id,
+        ]);
+        $noPeriodSubject = Subject::create([
+            'training_id' => $noPeriodTraining->id,
+            'title' => 'Mata Pelatihan Tanpa Periode',
+            'sort_order' => 1,
+        ]);
+        $noPeriodSubject->assignedUsers()->attach($this->developer->id, [
+            'role' => 'pengembang',
+            'assigned_by' => $admin->id,
+        ]);
+
+        // Developer index should only show the active period training's subject
+        $response = $this->actingAs($this->developer)->get(route('developer.subjects.index'));
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('developer/subjects/index')
+            ->has('subjects.data', 1)
+            ->where('subjects.data.0.id', $this->assignedSubject->id)
+        );
+
+        // Accessing show for subject in non-active period redirects with error
+        $showResponse = $this->actingAs($this->developer)->get(route('developer.subjects.show', $closedSubject));
+        $showResponse->assertRedirect(route('developer.subjects.index'));
+        $showResponse->assertSessionHas('error');
     }
 }

@@ -63,7 +63,7 @@ export default function Index({ reviews }: Props) {
                 <div>
                     <h1 className="text-2xl font-semibold text-foreground">Tugas Reviu</h1>
                     <p className="text-sm text-muted-foreground mt-1">
-                        Daftar materi pelatihan yang ditugaskan kepada Anda untuk direviu.
+                        Daftar materi pelatihan pada periode reviu aktif yang ditugaskan kepada Anda untuk direviu.
                     </p>
                 </div>
 
@@ -82,7 +82,7 @@ export default function Index({ reviews }: Props) {
                                 {reviewItems.length === 0 ? (
                                     <tr>
                                         <td colSpan={4} className="p-8 text-center text-muted-foreground">
-                                            Belum ada tugas reviu.
+                                            Belum ada tugas reviu pada periode aktif saat ini.
                                         </td>
                                     </tr>
                                 ) : (
