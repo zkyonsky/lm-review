@@ -79,12 +79,10 @@ class ReportController extends Controller
 
         $trainings = $trainingsQuery
             ->with([
+                'subjects.reviewers:id,name',
                 'subjects.materials.currentVersion',
                 'subjects.materials.versions' => fn ($q) => $q->orderByDesc('version_number'),
-                'subjects.materials.assignments' => function ($aq) use ($periodId) {
-                    if ($periodId) {
-                        $aq->where('review_period_id', $periodId);
-                    }
+                'subjects.materials.assignments' => function ($aq) {
                     $aq->with([
                         'reviewer:id,name',
                         'reviews' => function ($rq) {
@@ -99,7 +97,7 @@ class ReportController extends Controller
             ])
             ->get();
 
-        $callback = function() use ($trainings, $columns) {
+        $callback = function() use ($trainings, $columns, $periodId) {
             $file = fopen('php://output', 'w');
 
             // UTF-8 BOM for MS Excel compatibility
@@ -159,9 +157,26 @@ class ReportController extends Controller
                         $version = $material->currentVersion ?? $material->versions->first();
                         $versionNumber = $version ? 'v' . $version->version_number : '-';
 
-                        $assignments = $material->assignments;
+                        $allAssignments = $material->assignments;
 
-                        if ($assignments->isEmpty()) {
+                        if ($periodId) {
+                            $periodAssignments = $allAssignments->filter(fn ($a) => (int)$a->review_period_id === (int)$periodId);
+                            if ($periodAssignments->isNotEmpty()) {
+                                $periodReviewerIds = $periodAssignments->pluck('reviewer_id')->filter()->all();
+                                $nullAssignments = $allAssignments->filter(fn ($a) => is_null($a->review_period_id) && !in_array($a->reviewer_id, $periodReviewerIds));
+                                $assignments = $periodAssignments->concat($nullAssignments);
+                            } else {
+                                $nullAssignments = $allAssignments->filter(fn ($a) => is_null($a->review_period_id));
+                                $assignments = $nullAssignments->isNotEmpty() ? $nullAssignments : $allAssignments;
+                            }
+                        } else {
+                            $assignments = $allAssignments;
+                        }
+
+                        $existingReviewerIds = $assignments->pluck('reviewer_id')->filter()->all();
+                        $unassignedSubjectReviewers = $subject->reviewers->reject(fn ($r) => in_array($r->id, $existingReviewerIds));
+
+                        if ($assignments->isEmpty() && $unassignedSubjectReviewers->isEmpty()) {
                             fputcsv($file, [
                                 $rowNumber++,
                                 $trainingItem->title,
@@ -185,14 +200,26 @@ class ReportController extends Controller
 
                         foreach ($assignments as $assignment) {
                             $reviewerName = $assignment->reviewer->name ?? '-';
-                            $review = $assignment->reviews->first();
+                            $review = $assignment->reviews->firstWhere('material_version_id', $version?->id) ?? $assignment->reviews->first();
 
-                            $isSubmitted = $assignment->status === AssignmentStatus::Submitted 
-                                || $review?->status === ReviewStatus::Submitted;
+                            $isAssignmentSubmitted = $assignment->status === AssignmentStatus::Submitted 
+                                || ($assignment->status instanceof \BackedEnum ? $assignment->status->value === 'submitted' : $assignment->status === 'submitted');
+
+                            $isReviewSubmitted = $review?->status === ReviewStatus::Submitted
+                                || ($review?->status instanceof \BackedEnum ? $review->status->value === 'submitted' : $review?->status === 'submitted');
+
+                            $isSubmitted = $isAssignmentSubmitted || $isReviewSubmitted;
+
+                            $isAssignmentInProgress = $assignment->status === AssignmentStatus::InProgress
+                                || ($assignment->status instanceof \BackedEnum ? $assignment->status->value === 'in_progress' : $assignment->status === 'in_progress');
+
+                            $isReviewDraftWithContent = $review && (
+                                $review->status === ReviewStatus::Draft || ($review->status instanceof \BackedEnum ? $review->status->value === 'draft' : $review->status === 'draft')
+                            ) && ($review->comments->isNotEmpty() || $review->general_notes);
 
                             if ($isSubmitted) {
                                 $statusReviu = 'Selesai Direviu';
-                            } elseif ($assignment->status === AssignmentStatus::InProgress || ($review && $review->status === ReviewStatus::Draft && ($review->comments->isNotEmpty() || $review->general_notes))) {
+                            } elseif ($isAssignmentInProgress || $isReviewDraftWithContent) {
                                 $statusReviu = 'Sedang Direviu';
                             } else {
                                 $statusReviu = 'Belum Direviu';
@@ -257,6 +284,27 @@ class ReportController extends Controller
                                     ]);
                                 }
                             }
+                        }
+
+                        foreach ($unassignedSubjectReviewers as $reviewer) {
+                            fputcsv($file, [
+                                $rowNumber++,
+                                $trainingItem->title,
+                                $subject->title,
+                                $material->title,
+                                $versionNumber,
+                                $reviewer->name,
+                                'Belum Direviu',
+                                '-',
+                                '-',
+                                '-',
+                                '-',
+                                '-',
+                                '-',
+                                '-',
+                                '-',
+                                '-',
+                            ]);
                         }
                     }
                 }

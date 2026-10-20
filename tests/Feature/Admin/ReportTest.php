@@ -276,4 +276,110 @@ class ReportTest extends TestCase
         $this->assertStringContainsString('Belum Ditugaskan', $content);
         $this->assertStringContainsString('Reviewer User', $content);
     }
+
+    public function test_reviewer_assigned_at_subject_level_is_displayed_in_report(): void
+    {
+        $period = ReviewPeriod::create([
+            'name' => 'Periode Subject Reviewer',
+            'year' => 2026,
+            'start_date' => now()->startOfMonth(),
+            'end_date' => now()->endOfMonth(),
+            'status' => ReviewPeriodStatus::Active,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $training = Training::create([
+            'title' => 'Pelatihan Microlearning',
+            'year' => 2026,
+            'created_by' => $this->admin->id,
+        ]);
+        $period->trainings()->attach($training->id);
+
+        $subject = Subject::create([
+            'training_id' => $training->id,
+            'title' => 'Mata Pelatihan Khusus',
+        ]);
+
+        // Reviewer ditugaskan di tingkat Subject
+        $subject->assignedUsers()->attach($this->reviewer->id, [
+            'role' => 'reviewer',
+            'assigned_by' => $this->admin->id,
+        ]);
+
+        // Materi tidak memiliki row ReviewAssignment eksplisit
+        $material = Material::create([
+            'subject_id' => $subject->id,
+            'type' => MaterialType::Video,
+            'status' => MaterialStatus::InReview,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('admin.reports.comments', ['period_id' => $period->id]));
+
+        $response->assertOk();
+
+        ob_start();
+        $response->sendContent();
+        $content = ob_get_clean();
+
+        // Nama reviewer harus muncul dan status 'Belum Direviu', tidak boleh '-' atau 'Belum Ditugaskan'
+        $this->assertStringContainsString('Reviewer User', $content);
+        $this->assertStringContainsString('Belum Direviu', $content);
+        $this->assertStringNotContainsString('Belum Ditugaskan', $content);
+    }
+
+    public function test_reviewer_with_null_review_period_id_is_displayed_in_period_export(): void
+    {
+        $period = ReviewPeriod::create([
+            'name' => 'Periode Penugasan Umum',
+            'year' => 2026,
+            'start_date' => now()->startOfMonth(),
+            'end_date' => now()->endOfMonth(),
+            'status' => ReviewPeriodStatus::Active,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $training = Training::create([
+            'title' => 'Pelatihan Akuntansi',
+            'year' => 2026,
+            'created_by' => $this->admin->id,
+        ]);
+        $period->trainings()->attach($training->id);
+
+        $subject = Subject::create([
+            'training_id' => $training->id,
+            'title' => 'Bagan Akun',
+        ]);
+
+        $material = Material::create([
+            'subject_id' => $subject->id,
+            'type' => MaterialType::Pdf,
+            'status' => MaterialStatus::InReview,
+            'created_by' => $this->admin->id,
+        ]);
+
+        // Assignment dibuat dengan review_period_id = NULL
+        ReviewAssignment::create([
+            'review_period_id' => null,
+            'material_id' => $material->id,
+            'reviewer_id' => $this->reviewer->id,
+            'assigned_by' => $this->admin->id,
+            'status' => AssignmentStatus::Pending,
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('admin.reports.comments', ['period_id' => $period->id]));
+
+        $response->assertOk();
+
+        ob_start();
+        $response->sendContent();
+        $content = ob_get_clean();
+
+        // Harus menampilkan reviewer dan tidak boleh '-'
+        $this->assertStringContainsString('Reviewer User', $content);
+        $this->assertStringContainsString('Belum Direviu', $content);
+        $this->assertStringNotContainsString('Belum Ditugaskan', $content);
+    }
 }
