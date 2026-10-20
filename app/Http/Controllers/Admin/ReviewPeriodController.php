@@ -147,7 +147,14 @@ class ReviewPeriodController extends Controller
             });
         }
 
-        $trainings = $query->paginate(10)->withQueryString();
+        $perPageInput = $request->input('per_page', '10');
+        if ($perPageInput === 'all' || (int) $perPageInput === -1) {
+            $totalCount = (clone $query)->count();
+            $trainings = $query->paginate(max($totalCount, 1))->withQueryString();
+        } else {
+            $perPage = max(1, min((int) $perPageInput, 500));
+            $trainings = $query->paginate($perPage)->withQueryString();
+        }
 
         // Ambil pelatihan master yang belum terdaftar di periode ini untuk modal
         $enrolledIds = $period->trainings()->pluck('trainings.id');
@@ -164,6 +171,7 @@ class ReviewPeriodController extends Controller
             'filters' => [
                 'search' => $request->input('search', ''),
                 'status' => $request->input('status', ''),
+                'per_page' => (string) $perPageInput,
             ],
             'statuses' => ['Selesai Reviu', 'Sedang Direviu', 'Belum Direviu'],
         ]);

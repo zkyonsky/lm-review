@@ -472,4 +472,51 @@ class ReviewPeriodTest extends TestCase
         $response->assertRedirect();
         $this->assertCount(0, $period->fresh()->trainings);
     }
+
+    public function test_admin_can_paginate_trainings_with_custom_per_page_and_all(): void
+    {
+        $period = ReviewPeriod::create([
+            'name' => 'Periode Paginasi 2026',
+            'year' => 2026,
+            'status' => ReviewPeriodStatus::Active->value,
+            'created_by' => $this->admin->id,
+        ]);
+
+        for ($i = 1; $i <= 15; $i++) {
+            $t = Training::create([
+                'title' => "Pelatihan Batch {$i}",
+                'created_by' => $this->admin->id,
+            ]);
+            $period->trainings()->attach($t->id);
+        }
+
+        // Test per_page = 5
+        $res5 = $this->actingAs($this->admin)->get(route('admin.periods.show', [
+            'period' => $period,
+            'per_page' => 5,
+        ]));
+        $res5->assertOk();
+        $res5->assertInertia(fn ($page) => $page
+            ->component('admin/periods/show')
+            ->has('trainings.data', 5)
+            ->where('trainings.total', 15)
+            ->where('trainings.last_page', 3)
+            ->where('filters.per_page', '5')
+        );
+
+        // Test per_page = 'all'
+        $resAll = $this->actingAs($this->admin)->get(route('admin.periods.show', [
+            'period' => $period,
+            'per_page' => 'all',
+        ]));
+        $resAll->assertOk();
+        $resAll->assertInertia(fn ($page) => $page
+            ->component('admin/periods/show')
+            ->has('trainings.data', 15)
+            ->where('trainings.total', 15)
+            ->where('trainings.last_page', 1)
+            ->where('filters.per_page', 'all')
+        );
+    }
 }
+

@@ -86,6 +86,7 @@ type Props = {
     filters?: {
         search?: string;
         status?: string;
+        per_page?: string;
     };
     statuses?: string[];
 };
@@ -100,6 +101,7 @@ export default function Show({
     const { flash } = usePage<{ flash?: { success?: string; error?: string } } & SharedData>().props;
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const [statusFilter, setStatusFilter] = useState(filters.status || '');
+    const [perPage, setPerPage] = useState<string>(filters.per_page || '10');
 
     // Modal Add Training to Period
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -122,11 +124,21 @@ export default function Show({
         }
     }, [flash]);
 
+    useEffect(() => {
+        setSearchTerm(filters.search || '');
+        setStatusFilter(filters.status || '');
+        setPerPage(filters.per_page || '10');
+    }, [filters.search, filters.status, filters.per_page]);
+
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         router.get(
             `/admin/periods/${period.id}`,
-            { search: searchTerm, status: statusFilter },
+            {
+                search: searchTerm || undefined,
+                status: statusFilter || undefined,
+                per_page: perPage !== '10' ? perPage : undefined,
+            },
             { preserveState: true, replace: true }
         );
     };
@@ -134,7 +146,21 @@ export default function Show({
     const handleReset = () => {
         setSearchTerm('');
         setStatusFilter('');
+        setPerPage('10');
         router.get(`/admin/periods/${period.id}`, {}, { preserveState: true, replace: true });
+    };
+
+    const handlePerPageChange = (newPerPage: string) => {
+        setPerPage(newPerPage);
+        router.get(
+            `/admin/periods/${period.id}`,
+            {
+                search: searchTerm || undefined,
+                status: statusFilter || undefined,
+                per_page: newPerPage !== '10' ? newPerPage : undefined,
+            },
+            { preserveState: true, replace: true, preserveScroll: true }
+        );
     };
 
     const toggleSelectMaster = (id: number) => {
@@ -205,7 +231,7 @@ export default function Show({
         window.location.href = `/admin/trainings/stmk/bulk?${params.toString()}`;
     };
 
-    const hasActiveFilter = Boolean(filters.search || filters.status);
+    const hasActiveFilter = Boolean(filters.search || filters.status || (filters.per_page && filters.per_page !== '10'));
 
     const completionRate =
         period.assignments_count > 0
@@ -273,7 +299,7 @@ export default function Show({
                                 asChild
                                 className="h-9 gap-1.5 text-xs text-emerald-700 border-emerald-300 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-950/30"
                             >
-                                <a href={`/admin/reports/comments?period_id=${period.id}`} download title="Ekspor rekapitulasi komentar dan catatan pada periode ini">
+                                <a href={`/admin/reports/comments?period_id=${period.id}`} title="Ekspor rekapitulasi komentar dan catatan pada periode ini">
                                     <FileSpreadsheet className="h-4 w-4" />
                                     <span>Ekspor Laporan Reviu (CSV)</span>
                                 </a>
@@ -629,12 +655,79 @@ export default function Show({
                         </table>
                     </div>
 
-                    {trainings.data.length > 0 && (
-                        <div className="p-4 border-t border-border flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">
-                                Menampilkan {trainings.from ?? 0} s.d. {trainings.to ?? 0} dari {trainings.total} pelatihan terdaftar
-                            </span>
-                            <Pagination links={trainings.links} />
+                    {trainings.total > 0 && (
+                        <div className="p-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 bg-card/50">
+                            <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                                <span>
+                                    Menampilkan{' '}
+                                    <span className="font-semibold text-foreground">{trainings.from ?? 0}</span> s.d.{' '}
+                                    <span className="font-semibold text-foreground">{trainings.to ?? 0}</span> dari{' '}
+                                    <span className="font-semibold text-foreground">{trainings.total}</span> pelatihan terdaftar
+                                </span>
+
+                                <div className="flex items-center gap-1.5 pl-3 border-l border-border">
+                                    <span>Tampilkan:</span>
+                                    <select
+                                        value={perPage}
+                                        onChange={(e) => handlePerPageChange(e.target.value)}
+                                        className="h-8 rounded-md border border-input bg-background px-2 text-xs text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
+                                    >
+                                        <option value="10">10 data</option>
+                                        <option value="25">25 data</option>
+                                        <option value="50">50 data</option>
+                                        <option value="100">100 data</option>
+                                        <option value="all">Tampilkan semua data</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Pagination buttons */}
+                            {trainings.links && trainings.links.length > 3 && (
+                                <div className="flex items-center gap-1">
+                                    {trainings.links.map((link, idx) => {
+                                        const isPrev = link.label.includes('Previous');
+                                        const isNext = link.label.includes('Next');
+
+                                        let label = link.label;
+                                        if (isPrev) label = 'Sebelumnya';
+                                        if (isNext) label = 'Berikutnya';
+
+                                        if (!link.url) {
+                                            return (
+                                                <Button
+                                                    key={idx}
+                                                    variant="outline"
+                                                    size="sm"
+                                                    disabled
+                                                    className="h-8 px-2 sm:px-3 text-xs opacity-50"
+                                                >
+                                                    {label}
+                                                </Button>
+                                            );
+                                        }
+
+                                        return (
+                                            <Button
+                                                key={idx}
+                                                variant={link.active ? 'default' : 'outline'}
+                                                size="sm"
+                                                asChild
+                                                className={`h-8 px-2 sm:px-3 text-xs ${
+                                                    link.active ? 'font-semibold' : ''
+                                                }`}
+                                            >
+                                                <Link
+                                                    href={link.url}
+                                                    preserveScroll
+                                                    preserveState
+                                                >
+                                                    <span dangerouslySetInnerHTML={{ __html: label }} />
+                                                </Link>
+                                            </Button>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     )}
                 </Card>

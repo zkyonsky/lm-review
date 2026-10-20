@@ -53,6 +53,12 @@ class Review extends Model
         return $this->belongsTo(ReviewAssignment::class, 'review_assignment_id');
     }
 
+    /** @return BelongsTo<ReviewAssignment, $this> */
+    public function reviewAssignment(): BelongsTo
+    {
+        return $this->assignment();
+    }
+
     /** @return BelongsTo<MaterialVersion, $this> */
     public function materialVersion(): BelongsTo
     {
